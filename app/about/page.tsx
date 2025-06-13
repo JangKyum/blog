@@ -8,11 +8,9 @@ export default function AboutPage() {
     "React",
     "Next.js",
     "Vue",
-    "Nuxt",
     "Angular",
     "TypeScript",
     "JavaScript",
-    "Node.js",
     "CSS",
     "Performance",
   ]

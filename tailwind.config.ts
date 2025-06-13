@@ -89,6 +89,46 @@ const config = {
           600: "#ea580c",
           700: "#c2410c",
         },
+        gray: {
+          50: "#f9fafb",
+          100: "#f3f4f6",
+          200: "#e5e7eb",
+          300: "#d1d5db",
+          400: "#9ca3af",
+          500: "#6b7280",
+          600: "#4b5563",
+          700: "#374151",
+          800: "#1f2937",
+          900: "#111827",
+        },
+        red: {
+          50: "#fef2f2",
+          100: "#fee2e2",
+          200: "#fecaca",
+          300: "#fca5a5",
+          500: "#ef4444",
+          600: "#dc2626",
+          700: "#b91c1c",
+          800: "#991b1b",
+        },
+        yellow: {
+          50: "#fffbeb",
+          100: "#fef3c7",
+          200: "#fde68a",
+          500: "#eab308",
+          600: "#ca8a04",
+          700: "#a16207",
+          800: "#854d0e",
+        },
+        cyan: {
+          50: "#ecfeff",
+          100: "#cffafe",
+          200: "#a5f3fc",
+          500: "#06b6d4",
+          600: "#0891b2",
+          700: "#0e7490",
+          800: "#155e75",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -116,6 +156,25 @@ const config = {
     },
   },
   plugins: [require("tailwindcss-animate")],
+  safelist: [
+    // 기본 색상
+    ...["blue", "red", "yellow", "green", "gray", "cyan", "purple", "pink", "orange"].flatMap(color => [
+      `bg-${color}-100`,
+      `text-${color}-700`,
+      `text-${color}-800`,
+      `border-${color}-200`,
+      `border-${color}-300`,
+      // hover 효과
+      `hover:bg-${color}-500`,
+      `hover:bg-${color}-600`,
+      `hover:text-white`,
+    ]),
+    // Next.js 특별 스타일
+    "bg-gray-900",
+    "text-white",
+    "border-gray-800",
+    "hover:bg-gray-800",
+  ]
 } satisfies Config
 
 export default config

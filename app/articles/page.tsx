@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Calendar, Clock, Search } from "lucide-react"
 import { getCategoryColor, getCategoryHoverColor, categories } from "@/lib/category-colors"
+import { format } from "date-fns"
+import { ko } from "date-fns/locale"
 
 // 샘플 블로그 포스트 데이터 (확장된 버전)
 const allPosts = [
@@ -147,7 +149,7 @@ export default function ArticlesPage() {
             <CardContent>
               <div className="flex items-center text-sm text-muted-foreground">
                 <Calendar className="mr-1 h-3 w-3" />
-                {new Date(post.date).toLocaleDateString("ko-KR")}
+                {format(new Date(post.date), "PPP", { locale: ko })}
               </div>
             </CardContent>
           </Card>

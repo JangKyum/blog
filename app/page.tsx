@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, ArrowRight } from "lucide-react"
 import { getCategoryColor } from "@/lib/category-colors"
+import { format } from "date-fns"
+import { ko } from "date-fns/locale"
 
 // 샘플 블로그 포스트 데이터
 const recentPosts = [
@@ -65,14 +67,13 @@ export default function HomePage() {
           <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 border border-blue-200 mb-6">
             <span className="text-sm font-medium text-blue-600">✨ Welcome to codedot blog</span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-            안녕하세요!
-            <span className="inline-block animate-bounce ml-2">👋</span>
-            <br />
-            <span className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              codedot 블로그
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight">
+            <span className="inline-flex items-center flex-wrap justify-center gap-2">
+              <span>안녕하세요!</span>
+              <span className="inline-block animate-bounce">👋</span>
+              <span className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">codedot 블로그</span>
+              <span>에 오신 것을 환영합니다</span>
             </span>
-            에 오신 것을 환영합니다
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
             개발과 기술에 대한 깊이 있는 이야기를 나누는 공간입니다. 최신 웹 기술부터 개발 경험까지 다양한 주제를
@@ -132,7 +133,7 @@ export default function HomePage() {
               <CardContent>
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Calendar className="mr-1 h-3 w-3" />
-                  {new Date(post.date).toLocaleDateString("ko-KR")}
+                  {format(new Date(post.date), "PPP", { locale: ko })}
                 </div>
               </CardContent>
             </Card>
