@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, ArrowRight } from "lucide-react"
-import { getCategoryColor } from "@/lib/category-colors"
 import { format } from "date-fns"
 import { ko } from "date-fns/locale"
 
@@ -14,8 +13,6 @@ const recentPosts = [
     title: "Next.js 15의 새로운 기능들",
     description: "Next.js 15에서 추가된 새로운 기능들과 개선사항들을 살펴보겠습니다.",
     date: "2024-12-10",
-    readTime: "5분",
-    category: "Next.js",
     slug: "nextjs-15-new-features",
   },
   {
@@ -23,8 +20,6 @@ const recentPosts = [
     title: "React Server Components 완벽 가이드",
     description: "React Server Components의 개념부터 실제 구현까지 상세히 알아보겠습니다.",
     date: "2024-12-08",
-    readTime: "8분",
-    category: "React",
     slug: "react-server-components-guide",
   },
   {
@@ -32,8 +27,6 @@ const recentPosts = [
     title: "TypeScript 5.0 새로운 기능 정리",
     description: "TypeScript 5.0에서 추가된 새로운 기능들과 변경사항을 정리했습니다.",
     date: "2024-12-05",
-    readTime: "6분",
-    category: "TypeScript",
     slug: "typescript-5-new-features",
   },
   {
@@ -41,8 +34,6 @@ const recentPosts = [
     title: "Tailwind CSS 최적화 팁",
     description: "Tailwind CSS를 더 효율적으로 사용하기 위한 최적화 팁들을 공유합니다.",
     date: "2024-12-03",
-    readTime: "4분",
-    category: "CSS",
     slug: "tailwind-css-optimization-tips",
   },
   {
@@ -50,8 +41,6 @@ const recentPosts = [
     title: "웹 성능 최적화 체크리스트",
     description: "웹사이트 성능을 향상시키기 위한 필수 체크리스트를 정리했습니다.",
     date: "2024-12-01",
-    readTime: "7분",
-    category: "Performance",
     slug: "web-performance-checklist",
   },
 ]
@@ -116,13 +105,6 @@ export default function HomePage() {
               className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/70 backdrop-blur-sm hover:bg-white/90 hover:-translate-y-1"
             >
               <CardHeader>
-                <div className="flex items-center justify-between mb-2">
-                  <Badge className={getCategoryColor(post.category)}>{post.category}</Badge>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Clock className="mr-1 h-3 w-3" />
-                    {post.readTime}
-                  </div>
-                </div>
                 <CardTitle className="line-clamp-2">
                   <Link href={`/articles/${post.slug}`} className="hover:text-primary transition-colors">
                     {post.title}

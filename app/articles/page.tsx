@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Calendar, Clock, Search } from "lucide-react"
-import { getCategoryColor, getCategoryHoverColor, categories } from "@/lib/category-colors"
 import { format } from "date-fns"
 import { ko } from "date-fns/locale"
 
@@ -83,15 +82,6 @@ const allPosts = [
   },
 ]
 
-const categoriesWithAll = ["All", ...categories]
-
-const getCategoryFilterStyle = (category: string) => {
-  if (category === "All") {
-    return "bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0"
-  }
-  return `${getCategoryColor(category)} ${getCategoryHoverColor(category)} cursor-pointer transition-colors`
-}
-
 export default function ArticlesPage() {
   return (
     <div className="container py-8 md:py-12">
@@ -114,14 +104,6 @@ export default function ArticlesPage() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input placeholder="글 검색..." className="pl-10" />
         </div>
-
-        <div className="flex flex-wrap gap-2">
-          {categoriesWithAll.map((category) => (
-            <Badge key={category} variant="outline" className={getCategoryFilterStyle(category)}>
-              {category}
-            </Badge>
-          ))}
-        </div>
       </div>
 
       {/* Articles Grid */}
@@ -132,13 +114,6 @@ export default function ArticlesPage() {
             className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/70 backdrop-blur-sm hover:bg-white hover:-translate-y-1"
           >
             <CardHeader>
-              <div className="flex items-center justify-between mb-2">
-                <Badge className={getCategoryColor(post.category)}>{post.category}</Badge>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Clock className="mr-1 h-3 w-3" />
-                  {post.readTime}
-                </div>
-              </div>
               <CardTitle className="line-clamp-2">
                 <Link href={`/articles/${post.slug}`} className="hover:text-primary transition-colors">
                   {post.title}

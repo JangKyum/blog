@@ -6,9 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileText, BarChart3, Eye, Edit, Trash2, Save, Send } from "lucide-react"
-import { getCategoryColor, categories } from "@/lib/category-colors"
 
 // 샘플 통계 데이터
 const stats = [
@@ -75,17 +73,16 @@ const getStatColor = (title: string) => {
 
 export default function AdminPage() {
   const [title, setTitle] = useState("")
-  const [category, setCategory] = useState("")
   const [content, setContent] = useState("")
   const [tags, setTags] = useState("")
 
   const handleSaveDraft = () => {
-    console.log("초안 저장:", { title, category, content, tags })
+    console.log("초안 저장:", { title, content, tags })
     // 여기에 초안 저장 로직 구현
   }
 
   const handlePublish = () => {
-    console.log("글 게시:", { title, category, content, tags })
+    console.log("글 게시:", { title, content, tags })
     // 여기에 글 게시 로직 구현
   }
 
@@ -140,7 +137,6 @@ export default function AdminPage() {
                   <div className="space-y-2 flex-1 min-w-0">
                     <h4 className="font-medium line-clamp-1 pr-2">{post.title}</h4>
                     <div className="flex flex-wrap items-center gap-2 text-sm">
-                      <Badge className={getCategoryColor(post.category)}>{post.category}</Badge>
                       <Badge variant={post.status === "published" ? "default" : "secondary"} className="text-xs">
                         {post.status === "published" ? "게시됨" : "초안"}
                       </Badge>
@@ -183,31 +179,6 @@ export default function AdminPage() {
                 onChange={(e) => setTitle(e.target.value)}
               />
             </div>
-
-            <div className="space-y-2">
-              <label htmlFor="category" className="text-sm font-medium">
-                카테고리
-              </label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger>
-                  <SelectValue placeholder="카테고리를 선택하세요" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {category && (
-                <div className="mt-2">
-                  <span className="text-sm text-muted-foreground">선택된 카테고리: </span>
-                  <Badge className={getCategoryColor(category)}>{category}</Badge>
-                </div>
-              )}
-            </div>
-
             <div className="space-y-2">
               <label htmlFor="tags" className="text-sm font-medium">
                 태그
@@ -219,7 +190,6 @@ export default function AdminPage() {
                 onChange={(e) => setTags(e.target.value)}
               />
             </div>
-
             <div className="space-y-2">
               <label htmlFor="content" className="text-sm font-medium">
                 내용
@@ -232,7 +202,6 @@ export default function AdminPage() {
                 onChange={(e) => setContent(e.target.value)}
               />
             </div>
-
             <div className="flex gap-2 pt-4">
               <Button variant="outline" onClick={handleSaveDraft} className="flex-1">
                 <Save className="mr-2 h-4 w-4" />
