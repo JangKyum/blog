@@ -203,10 +203,10 @@ export default function AdminPage() {
               />
             </div>
             <div className="flex gap-2 pt-4">
-              <Button variant="outline" onClick={handleSaveDraft} className="flex-1">
+              {/* <Button variant="outline" onClick={handleSaveDraft} className="flex-1">
                 <Save className="mr-2 h-4 w-4" />
                 초안 저장
-              </Button>
+              </Button> */}
               <Button
                 onClick={handlePublish}
                 className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-blue-500 hover:to-purple-500"
