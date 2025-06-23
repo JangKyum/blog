@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { FileText, BarChart3, Eye, Edit, Trash2, Save, Send } from "lucide-react"
+import { FileText, BarChart3, Eye, Edit, Trash2, Save, Send, LogOut, User } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
 
 // 샘플 통계 데이터
 const stats = [
@@ -58,7 +60,7 @@ const recentPosts = [
   },
 ]
 
-const getStatColor = (title: string) => {
+const getStatColor = (title) => {
   switch (title) {
     case "총 글 수":
       return "from-blue-500 to-purple-500"
@@ -75,6 +77,20 @@ export default function AdminPage() {
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [tags, setTags] = useState("")
+  const { user, loading, signOut } = useAuth()
+  const router = useRouter()
+
+  // 인증 확인
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/auth/login")
+    }
+  }, [user, loading, router])
+
+  const handleLogout = async () => {
+    await signOut()
+    router.push("/auth/login")
+  }
 
   const handleSaveDraft = () => {
     console.log("초안 저장:", { title, content, tags })
@@ -86,12 +102,45 @@ export default function AdminPage() {
     // 여기에 글 게시 로직 구현
   }
 
+  // 로딩 중이거나 인증되지 않은 경우
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">인증 확인 중...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null // 리다이렉트 중
+  }
+
   return (
     <div className="container py-8 md:py-12">
       {/* Header */}
       <div className="mb-8">
-        <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-orange-100 to-red-100 border border-orange-200 mb-4">
-          <span className="text-sm font-medium text-orange-600">⚡ Admin Panel</span>
+        <div className="flex justify-between items-start mb-4">
+          <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-orange-100 to-red-100 border border-orange-200">
+            <span className="text-sm font-medium text-orange-600">⚡ Admin Panel</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <User className="h-4 w-4" />
+              <span>{user?.email}</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              로그아웃
+            </Button>
+          </div>
         </div>
         <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
           Admin Dashboard
@@ -203,10 +252,10 @@ export default function AdminPage() {
               />
             </div>
             <div className="flex gap-2 pt-4">
-              {/* <Button variant="outline" onClick={handleSaveDraft} className="flex-1">
+              <Button variant="outline" onClick={handleSaveDraft} className="flex-1">
                 <Save className="mr-2 h-4 w-4" />
                 초안 저장
-              </Button> */}
+              </Button>
               <Button
                 onClick={handlePublish}
                 className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-blue-500 hover:to-purple-500"
