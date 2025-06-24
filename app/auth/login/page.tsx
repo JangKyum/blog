@@ -37,7 +37,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-start justify-center p-4 pt-16">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
@@ -46,22 +46,13 @@ export default function LoginPage() {
             <span className="text-sm font-medium text-blue-600">Admin Access</span>
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-            관리자 로그인
+            로그인
           </h1>
-          <p className="text-gray-600 mt-2">
-            블로그 관리 페이지에 접근하기 위해 로그인하세요
-          </p>
         </div>
 
         {/* Login Form */}
         <Card className="border-0 shadow-2xl bg-white/80 backdrop-blur-sm">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">
-              로그인
-            </CardTitle>
-            <CardDescription className="text-center">
-              관리자 계정으로 로그인하세요
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
