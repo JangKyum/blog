@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, ArrowRight, Eye } from "lucide-react"
 import { postsService } from "@/lib/posts"
+import { Suspense } from "react"
 
 interface Category {
   id: string
@@ -24,21 +25,162 @@ interface Post {
   categories: Category[]
 }
 
+// 안전한 색상 처리 함수
+function getSafeColor(color: string | null | undefined): string {
+  if (!color || color.trim() === '') {
+    return '#6b7280' // gray-500 기본색
+  }
+  return color
+}
+
+// 로딩 스켈레톤 컴포넌트
+function PostCardsSkeleton() {
+  return (
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {[...Array(6)].map((_, i) => (
+        <Card key={i} className="h-full flex flex-col animate-pulse">
+          <CardHeader className="flex-1">
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+              <div className="h-6 bg-gray-200 rounded"></div>
+              <div className="h-6 bg-gray-200 rounded w-4/5"></div>
+            </div>
+            <div className="space-y-2 mt-3">
+              <div className="h-4 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="flex justify-between">
+              <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+// 포스트 카드 컴포넌트 분리
+function PostCard({ post }: { post: Post }) {
+  return (
+    <Card className="group hover:shadow-2xl transition-all duration-300 border-2 border-gray-200 bg-white hover:border-blue-300 hover:-translate-y-1 hover:shadow-blue-100/50 rounded-xl h-full flex flex-col">
+      <CardHeader className="flex-1">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 space-y-2">
+            {/* 카테고리 표시 */}
+            {post.categories && post.categories.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {post.categories
+                  .filter(category => category && category.id) // null 체크 추가
+                  .slice(0, 2)
+                  .map((category: Category) => {
+                    const safeColor = getSafeColor(category?.color)
+                    return (
+                      <Badge 
+                        key={category.id} 
+                        variant="secondary" 
+                        className="text-xs font-medium border"
+                        style={{ 
+                          backgroundColor: `${safeColor}15`, 
+                          color: safeColor,
+                          borderColor: `${safeColor}40`
+                        }}
+                      >
+                        <span className="truncate max-w-[80px]">{category?.name || '카테고리'}</span>
+                      </Badge>
+                    )
+                  })}
+                {post.categories.filter(cat => cat && cat.id).length > 2 && (
+                  <Badge variant="secondary" className="text-xs border border-gray-300 bg-gray-100">
+                    +{post.categories.filter(cat => cat && cat.id).length - 2}
+                  </Badge>
+                )}
+              </div>
+            )}
+            
+            <CardTitle className="line-clamp-2 min-h-[3rem] leading-relaxed">
+              <Link 
+                href={`/posts/${post.slug}`} 
+                className="hover:text-primary transition-colors"
+              >
+                {post.title}
+              </Link>
+            </CardTitle>
+          </div>
+        </div>
+        <CardDescription className="line-clamp-3 text-gray-600 mt-3 leading-relaxed min-h-[4.5rem]">
+          {post.excerpt || '내용 미리보기가 없습니다.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="space-y-3">
+          {/* 메타 정보 */}
+          <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t border-gray-100">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center">
+                <Calendar className="mr-1 h-3 w-3" />
+                {new Date(post.published_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
+              </div>
+              {post.reading_time && (
+                <div className="flex items-center">
+                  <Clock className="mr-1 h-3 w-3" />
+                  {post.reading_time}분
+                </div>
+              )}
+            </div>
+            <div className="flex items-center">
+              <Eye className="mr-1 h-3 w-3" />
+              {post.view_count || 0}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// 최근 포스트 섹션 컴포넌트
+async function RecentPosts() {
+  const recentPosts = await getRecentPosts()
+  
+  if (recentPosts.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">아직 작성된 글이 없습니다.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {recentPosts.map((post) => (
+        <PostCard key={post.id} post={post} />
+      ))}
+    </div>
+  )
+}
+
 async function getRecentPosts() {
   try {
     const { posts, error } = await postsService.getRecentPosts(6)
     if (error) {
+      console.error('Failed to fetch recent posts:', error)
       return []
     }
     return posts || []
   } catch (err) {
+    console.error('Failed to fetch recent posts:', err)
     return []
   }
 }
 
-export default async function HomePage() {
-  const recentPosts = await getRecentPosts()
+// 조회수 실시간 반영을 위해 캐시 비활성화
+export const revalidate = 0
 
+export default async function HomePage() {
   return (
     <div className="container py-8 md:py-12">
       {/* Hero Section */}
@@ -80,86 +222,9 @@ export default async function HomePage() {
           <p className="text-gray-600 mt-2">새로 작성된 글들을 확인해보세요</p>
         </div>
 
-        {recentPosts.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">아직 작성된 글이 없습니다.</p>
-          </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {recentPosts.map((post) => (
-              <Card
-                key={post.id}
-                className="group hover:shadow-2xl transition-all duration-300 border-2 border-gray-200 bg-white hover:border-blue-300 hover:-translate-y-1 hover:shadow-blue-100/50 rounded-xl h-full flex flex-col"
-              >
-                <CardHeader className="flex-1">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 space-y-2">
-                      {/* 카테고리 표시 */}
-                      {post.categories && post.categories.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {post.categories.slice(0, 2).map((category: Category) => (
-                            <Badge 
-                              key={category.id} 
-                              variant="secondary" 
-                              className="text-xs font-medium border"
-                              style={{ 
-                                backgroundColor: `${category.color}15`, 
-                                color: category.color,
-                                borderColor: `${category.color}40`
-                              }}
-                            >
-                              <span className="truncate max-w-[80px]">{category.name}</span>
-                            </Badge>
-                          ))}
-                          {post.categories.length > 2 && (
-                            <Badge variant="secondary" className="text-xs border border-gray-300 bg-gray-100">
-                              +{post.categories.length - 2}
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-                      
-                      <CardTitle className="line-clamp-2 min-h-[3rem] leading-relaxed">
-                        <Link 
-                          href={`/posts/${post.slug}`} 
-                          className="hover:text-primary transition-colors"
-                        >
-                          {post.title}
-                        </Link>
-                      </CardTitle>
-                    </div>
-                  </div>
-                  <CardDescription className="line-clamp-3 text-gray-600 mt-3 leading-relaxed min-h-[4.5rem]">
-                    {post.excerpt || '내용 미리보기가 없습니다.'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-3">
-                    {/* 메타 정보 */}
-                    <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t border-gray-100">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center">
-                          <Calendar className="mr-1 h-3 w-3" />
-                          {new Date(post.published_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
-                        </div>
-                        {post.reading_time && (
-                          <div className="flex items-center">
-                            <Clock className="mr-1 h-3 w-3" />
-                            {post.reading_time}분
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center">
-                        <Eye className="mr-1 h-3 w-3" />
-                        {post.view_count || 0}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        <Suspense fallback={<PostCardsSkeleton />}>
+          <RecentPosts />
+        </Suspense>
       </section>
 
       {/* CTA Section */}

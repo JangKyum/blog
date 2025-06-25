@@ -5,6 +5,9 @@ import { Calendar, Clock, Eye } from "lucide-react"
 import { postsService, categoriesService } from "@/lib/posts"
 import ArticlesClient from "./articles-client"
 
+// 조회수 실시간 반영을 위해 캐시 비활성화
+export const revalidate = 0
+
 // 타입 정의
 interface Category {
   id: string
@@ -26,29 +29,46 @@ interface Post {
   categories?: Category[]
 }
 
-async function getInitialData() {
+async function getInitialData(searchTerm: string = '', selectedCategory: string = '', page: number = 1) {
   try {
+    const categoryFilter = selectedCategory || null
     const [postsResult, categoriesResult] = await Promise.all([
-      postsService.getAllPosts(1, 12),
+      searchTerm 
+        ? postsService.searchPosts(searchTerm, page, 12, categoryFilter as any)
+        : postsService.getAllPosts(page, 12, categoryFilter as any),
       categoriesService.getAllCategories()
     ])
 
     return {
       posts: postsResult.posts || [],
       categories: categoriesResult.categories || [],
-      totalPages: postsResult.totalPages || 1
+      totalCount: postsResult.totalCount || 0,
+      totalPages: postsResult.totalPages || 1,
+      currentPage: postsResult.currentPage || 1
     }
   } catch (err) {
+    console.error('초기 데이터 로드 실패:', err)
     return {
       posts: [],
       categories: [],
-      totalPages: 1
+      totalCount: 0,
+      totalPages: 1,
+      currentPage: 1
     }
   }
 }
 
-export default async function ArticlesPage() {
-  const { posts, categories, totalPages } = await getInitialData()
+export default async function ArticlesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  const resolvedSearchParams = await searchParams
+  const searchTerm = typeof resolvedSearchParams.search === 'string' ? resolvedSearchParams.search : ''
+  const selectedCategory = typeof resolvedSearchParams.category === 'string' ? resolvedSearchParams.category : ''
+  const page = typeof resolvedSearchParams.page === 'string' ? parseInt(resolvedSearchParams.page) || 1 : 1
+
+  const { posts, categories, totalCount, totalPages, currentPage } = await getInitialData(searchTerm, selectedCategory, page)
 
   return (
     <div className="container py-8 md:py-12">
@@ -68,8 +88,12 @@ export default async function ArticlesPage() {
       {/* Client-side interactive components */}
       <ArticlesClient 
         initialPosts={posts}
-        initialCategories={categories}
-        initialTotalPages={totalPages}
+        categories={categories}
+        totalCount={totalCount}
+        totalPages={totalPages}
+        currentPage={currentPage}
+        searchTerm={searchTerm}
+        selectedCategory={selectedCategory}
       />
     </div>
   )

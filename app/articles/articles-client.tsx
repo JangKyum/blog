@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -15,7 +15,6 @@ interface Category {
   name: string
   slug: string
   color: string
-  description?: string
 }
 
 interface Post {
@@ -25,326 +24,356 @@ interface Post {
   slug: string
   author_name: string
   published_at: string
-  reading_time?: number
-  view_count?: number
-  categories?: Category[]
+  reading_time: number
+  view_count: number
+  categories: Category[]
 }
 
 interface ArticlesClientProps {
   initialPosts: Post[]
-  initialCategories: Category[]
-  initialTotalPages: number
+  categories: Category[]
+  totalCount: number
+  totalPages: number
+  currentPage: number
+  searchTerm?: string
+  selectedCategory?: string
 }
 
-export default function ArticlesClient({
-  initialPosts,
-  initialCategories,
-  initialTotalPages
-}: ArticlesClientProps) {
-  const [posts, setPosts] = useState<Post[]>(initialPosts)
-  const [categories] = useState<Category[]>(initialCategories)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(initialTotalPages)
-  const [isSearching, setIsSearching] = useState(false)
+// 안전한 색상 처리 함수
+function getSafeColor(color: string | null | undefined): string {
+  if (!color || color.trim() === '') {
+    return '#6b7280' // gray-500 기본색
+  }
+  return color
+}
 
-  const postsPerPage = 12
+// 안전한 날짜 포맷팅 함수
+function formatDate(dateString: string): string {
+  try {
+    const date = new Date(dateString)
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${month}.${day}`
+  } catch (error) {
+    return '--.-'
+  }
+}
 
-  // 포스트 로드 함수
-  const loadPosts = async (page = 1, category: string | null = null, search = "") => {
-    setLoading(true)
-    try {
-      let result: any
-      if (search.trim()) {
-        setIsSearching(true)
-        result = await postsService.searchPosts(search, page, postsPerPage)
-        // searchPosts에는 totalPages가 없으므로 임시로 계산
-        if (result.posts) {
-          const estimatedTotalPages = result.posts.length === postsPerPage ? page + 1 : page
-          setTotalPages(estimatedTotalPages)
-        }
-      } else {
-        setIsSearching(false)
-        result = await postsService.getAllPosts(page, postsPerPage, category as any)
-        if (result.totalPages) {
-          setTotalPages(result.totalPages)
-        }
-      }
+// 로딩 스켈레톤 컴포넌트
+function PostCardSkeleton() {
+  return (
+    <Card className="h-full flex flex-col animate-pulse">
+      <CardHeader className="flex-1">
+        <div className="space-y-2">
+          <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-6 bg-gray-200 rounded"></div>
+          <div className="h-6 bg-gray-200 rounded w-4/5"></div>
+        </div>
+        <div className="space-y-2 mt-3">
+          <div className="h-4 bg-gray-200 rounded"></div>
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="flex justify-between">
+          <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
-      if (result.error) {
-        setError("글을 불러오는데 실패했습니다.")
-      } else {
-        setPosts(result.posts || [])
-        setCurrentPage(page)
-      }
-    } catch (err) {
-      setError("글을 불러오는데 실패했습니다.")
-    } finally {
-      setLoading(false)
-    }
+function PostsGrid({ posts, isLoading }: { posts: Post[], isLoading: boolean }) {
+  if (isLoading) {
+    return (
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {[...Array(6)].map((_, i) => (
+          <PostCardSkeleton key={i} />
+        ))}
+      </div>
+    )
   }
 
-  // 검색 처리
-  const handleSearch = (value: string) => {
-    setSearchTerm(value)
-    if (value.trim()) {
-      loadPosts(1, null, value)
-    } else {
-      loadPosts(1, selectedCategory)
-    }
-  }
-
-  // 카테고리 필터
-  const handleCategoryFilter = (categorySlug: string | null) => {
-    setSelectedCategory(categorySlug)
-    setSearchTerm("")
-    loadPosts(1, categorySlug)
-  }
-
-  // 페이지 변경
-  const handlePageChange = (page: number) => {
-    loadPosts(page, selectedCategory, searchTerm)
+  if (posts.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">검색 결과가 없습니다.</p>
+      </div>
+    )
   }
 
   return (
-    <>
-      {/* Search and Filter */}
-      <div className="mb-8 space-y-6">
-        {/* Search Bar */}
-        <div className="relative max-w-md mx-auto">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input 
-            placeholder="글 검색..." 
-            className="pl-10 h-12 text-base border-2 border-gray-200 focus:border-blue-400 rounded-xl shadow-sm" 
-            value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </div>
-
-        {/* Category Filter */}
-        {categories.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex flex-wrap justify-center gap-3">
-              {/* 전체 카테고리 태그 */}
-              <div
-                className={`
-                  inline-flex items-center px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all duration-300 transform hover:scale-105 hover:shadow-md
-                  ${selectedCategory === null 
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg' 
-                    : 'bg-white border-2 border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                  }
-                `}
-                onClick={() => handleCategoryFilter(null)}
-              >
-                <span className="mr-2">🏠</span>
-                전체
-                <span className="ml-2 text-xs opacity-75">
-                  {posts.length}
-                </span>
-              </div>
-
-              {/* 개별 카테고리 태그들 */}
-              {categories.map((category) => {
-                const isSelected = selectedCategory === category.slug
-                return (
-                  <div
-                    key={category.id}
-                    className={`
-                      inline-flex items-center px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all duration-300 transform hover:scale-105 hover:shadow-md
-                      ${isSelected 
-                        ? 'text-white shadow-lg ring-2 ring-white ring-opacity-60' 
-                        : 'bg-white border-2 text-gray-600 hover:shadow-md'
-                      }
-                    `}
-                    style={{
-                      backgroundColor: isSelected ? category.color : 'white',
-                      borderColor: isSelected ? category.color : '#e5e7eb',
-                      color: isSelected ? 'white' : category.color
-                    }}
-                    onClick={() => handleCategoryFilter(category.slug)}
-                  >
-                    <div 
-                      className={`w-2 h-2 rounded-full mr-2 ${isSelected ? 'bg-white' : ''}`}
-                      style={{ 
-                        backgroundColor: isSelected ? 'white' : category.color 
-                      }}
-                    />
-                    {category.name}
-                    {/* 포스트 개수 표시 (선택사항) */}
-                    <span className={`ml-2 text-xs ${isSelected ? 'text-white opacity-75' : 'text-gray-400'}`}>
-                      {/* 실제 개수는 나중에 추가 가능 */}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>          
-          </div>
-        )}
-      </div>
-
-      {/* Loading State */}
-      {loading ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse border-2 border-gray-200 bg-white rounded-xl">
-              <CardHeader>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-3 bg-gray-200 rounded w-full"></div>
-                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : error ? (
-        <div className="text-center py-12">
-          <p className="text-red-600">{error}</p>
-          <Button onClick={() => loadPosts()} className="mt-4">
-            다시 시도
-          </Button>
-        </div>
-      ) : posts.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500">
-            {isSearching ? "검색 결과가 없습니다." : "아직 작성된 글이 없습니다."}
-          </p>
-        </div>
-      ) : (
-        <>
-          {/* Articles Grid */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {posts.map((post) => (
-              <Card
-                key={post.id}
-                className="group hover:shadow-2xl transition-all duration-300 border-2 border-gray-200 bg-white hover:border-blue-300 hover:-translate-y-1 hover:shadow-blue-100/50 rounded-xl h-full flex flex-col"
-              >
-                <CardHeader className="flex-1">
-                  <div className="space-y-2">
-                    {/* 카테고리 */}
-                    {post.categories && post.categories.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {post.categories.slice(0, 2).map((category) => (
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {posts.map((post) => (
+        <Card
+          key={post.id}
+          className="group hover:shadow-2xl transition-all duration-300 border-2 border-gray-200 bg-white hover:border-blue-300 hover:-translate-y-1 hover:shadow-blue-100/50 rounded-xl h-full flex flex-col"
+        >
+          <CardHeader className="flex-1">
+            <div className="flex items-start justify-between">
+              <div className="flex-1 space-y-2">
+                {/* 카테고리 표시 */}
+                {post.categories && post.categories.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {post.categories
+                      .filter(category => category && category.id)
+                      .slice(0, 2)
+                      .map((category) => {
+                        const safeColor = getSafeColor(category?.color)
+                        return (
                           <Badge 
                             key={category.id} 
                             variant="secondary" 
                             className="text-xs font-medium border"
                             style={{ 
-                              backgroundColor: `${category.color}15`, 
-                              color: category.color,
-                              borderColor: `${category.color}40`
+                              backgroundColor: `${safeColor}15`, 
+                              color: safeColor,
+                              borderColor: `${safeColor}40`
                             }}
                           >
-                            <span className="truncate max-w-[80px]">{category.name}</span>
+                            <span className="truncate max-w-[80px]">{category?.name || '카테고리'}</span>
                           </Badge>
-                        ))}
-                        {post.categories.length > 2 && (
-                          <Badge variant="secondary" className="text-xs border border-gray-300 bg-gray-100">
-                            +{post.categories.length - 2}
-                          </Badge>
-                        )}
-                      </div>
+                        )
+                      })}
+                    {post.categories.filter(cat => cat && cat.id).length > 2 && (
+                      <Badge variant="secondary" className="text-xs border border-gray-300 bg-gray-100">
+                        +{post.categories.filter(cat => cat && cat.id).length - 2}
+                      </Badge>
                     )}
-                    
-                    <CardTitle className="line-clamp-2 min-h-[3rem] leading-relaxed">
-                      <Link href={`/posts/${post.slug}`} className="hover:text-primary transition-colors">
-                        {post.title}
-                      </Link>
-                    </CardTitle>
-                    <CardDescription className="line-clamp-3 text-gray-600 mt-3 leading-relaxed min-h-[4.5rem]">
-                      {post.excerpt || '내용 미리보기가 없습니다.'}
-                    </CardDescription>
                   </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t border-gray-100">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center">
-                        <Calendar className="mr-1 h-3 w-3" />
-                        {new Date(post.published_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
-                      </div>
-                      {post.reading_time && (
-                        <div className="flex items-center">
-                          <Clock className="mr-1 h-3 w-3" />
-                          {post.reading_time}분
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center">
-                      <Eye className="mr-1 h-3 w-3" />
-                      {post.view_count || 0}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center mt-12 space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                이전
-              </Button>
-              
-              <div className="flex space-x-1">
-                {[...Array(totalPages)].map((_, i) => {
-                  const page = i + 1
-                  if (
-                    page === 1 ||
-                    page === totalPages ||
-                    (page >= currentPage - 1 && page <= currentPage + 1)
-                  ) {
-                    return (
-                      <Button
-                        key={page}
-                        variant={currentPage === page ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handlePageChange(page)}
-                      >
-                        {page}
-                      </Button>
-                    )
-                  } else if (page === currentPage - 2 || page === currentPage + 2) {
-                    return <span key={page} className="px-2">...</span>
-                  }
-                  return null
-                })}
+                )}
+                
+                <CardTitle className="line-clamp-2 min-h-[3rem] leading-relaxed">
+                  <Link 
+                    href={`/posts/${post.slug}`} 
+                    className="hover:text-primary transition-colors"
+                  >
+                    {post.title}
+                  </Link>
+                </CardTitle>
               </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-              >
-                다음
-                <ChevronRight className="h-4 w-4" />
-              </Button>
             </div>
-          )}
+            <CardDescription className="line-clamp-3 text-gray-600 mt-3 leading-relaxed min-h-[4.5rem]">
+              {post.excerpt || '내용 미리보기가 없습니다.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t border-gray-100">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center">
+                    <Calendar className="mr-1 h-3 w-3" />
+                    {formatDate(post.published_at)}
+                  </div>
+                  {post.reading_time && (
+                    <div className="flex items-center">
+                      <Clock className="mr-1 h-3 w-3" />
+                      {post.reading_time}분
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <Eye className="mr-1 h-3 w-3" />
+                  {post.view_count || 0}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
 
-          {/* Total Count */}
-          <div className="text-center mt-8">
-            <p className="text-muted-foreground">
-              {isSearching 
-                ? `"${searchTerm}" 검색 결과: ${posts.length}개`
-                : `총 ${posts.length}개의 글이 있습니다`
-              }
-            </p>
+export default function ArticlesClient({ 
+  initialPosts, 
+  categories, 
+  totalCount, 
+  totalPages, 
+  currentPage,
+  searchTerm: initialSearchTerm = '',
+  selectedCategory: initialSelectedCategory = ''
+}: ArticlesClientProps) {
+  const [posts, setPosts] = useState(initialPosts)
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm)
+  const [selectedCategory, setSelectedCategory] = useState(initialSelectedCategory)
+  const [page, setPage] = useState(currentPage)
+  const [isLoading, setIsLoading] = useState(false)
+  const [totalPages_, setTotalPages] = useState(totalPages)
+  const [totalCount_, setTotalCount] = useState(totalCount)
+
+  const fetchPosts = async (pageNum: number, search: string, category: string) => {
+    setIsLoading(true)
+    try {
+      const params = new URLSearchParams()
+      params.set('page', pageNum.toString())
+      if (search) params.set('search', search)
+      if (category && category.trim() !== '') params.set('category', category)
+
+      const response = await fetch(`/api/posts?${params}`)
+      if (!response.ok) throw new Error('Failed to fetch posts')
+      
+      const data = await response.json()
+      
+      setPosts(data.posts || [])
+      setTotalPages(data.totalPages || 0)
+      setTotalCount(data.totalCount || 0)
+      setPage(pageNum)
+      
+      // URL 업데이트 (새로고침 없이)
+      const url = new URL(window.location.href)
+      if (search) url.searchParams.set('search', search)
+      else url.searchParams.delete('search')
+      if (category && category.trim() !== '') url.searchParams.set('category', category)
+      else url.searchParams.delete('category')
+      if (pageNum > 1) url.searchParams.set('page', pageNum.toString())
+      else url.searchParams.delete('page')
+      
+      window.history.replaceState({}, '', url.toString())
+    } catch (error) {
+      console.error('포스트 조회 실패:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 검색어 변경 시에만 디바운스 적용
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm !== initialSearchTerm) {
+        fetchPosts(1, searchTerm, selectedCategory)
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm]) // selectedCategory 제거하여 중복 호출 방지
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages_ && newPage !== page) {
+      fetchPosts(newPage, searchTerm, selectedCategory)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  const handleCategoryChange = (categorySlug: string) => {
+    setSelectedCategory(categorySlug)
+    
+    // 즉시 fetchPosts 호출하여 카테고리 변경을 반영
+    fetchPosts(1, searchTerm, categorySlug)
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* 검색 및 필터 */}
+      <div className="space-y-4">
+        {/* 검색바 */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            type="text"
+            placeholder="글 제목으로 검색..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        {/* 카테고리 필터 */}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={selectedCategory === '' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleCategoryChange('')}
+            className="rounded-full"
+          >
+            전체
+          </Button>
+          {categories
+            .filter(category => category && category.id && category.slug)
+            .map((category) => {
+              const safeColor = getSafeColor(category?.color)
+              return (
+                <Button
+                  key={category.id}
+                  variant={selectedCategory === category.slug ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleCategoryChange(category.slug)}
+                  className="rounded-full"
+                  style={selectedCategory === category.slug ? {
+                    backgroundColor: safeColor,
+                    borderColor: safeColor,
+                    color: 'white'
+                  } : {
+                    borderColor: `${safeColor}40`,
+                    color: safeColor
+                  }}
+                >
+                  {category?.name || '카테고리'}
+                </Button>
+              )
+            })}
+        </div>
+
+        {/* 결과 요약 */}
+        <div className="text-sm text-gray-600">
+          {isLoading ? (
+            <span>검색 중...</span>
+          ) : (
+            <span>총 {totalCount_}개의 글이 있습니다.</span>
+          )}
+        </div>
+      </div>
+
+      {/* 포스트 그리드 */}
+      <PostsGrid posts={posts} isLoading={isLoading} />
+
+      {/* 페이지네이션 */}
+      {totalPages_ > 1 && (
+        <div className="flex justify-center items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(page - 1)}
+            disabled={page <= 1 || isLoading}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            이전
+          </Button>
+          
+          {/* 페이지 번호들 */}
+          <div className="flex space-x-1">
+            {Array.from({ length: Math.min(5, totalPages_) }, (_, i) => {
+              const pageNum = Math.max(1, Math.min(page - 2 + i, totalPages_ - 4 + i))
+              if (pageNum > totalPages_) return null
+              
+              return (
+                <Button
+                  key={pageNum}
+                  variant={pageNum === page ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handlePageChange(pageNum)}
+                  disabled={isLoading}
+                  className="w-10"
+                >
+                  {pageNum}
+                </Button>
+              )
+            })}
           </div>
-        </>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(page + 1)}
+            disabled={page >= totalPages_ || isLoading}
+          >
+            다음
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       )}
-    </>
+    </div>
   )
 } 

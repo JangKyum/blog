@@ -7,6 +7,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { CalendarDays, Clock, ArrowLeft, Eye, Heart, Tag, Share2 } from "lucide-react"
 import { postsService } from "@/lib/posts"
 import ShareButton from "./share-button"
+import ViewCounter from "@/components/view-counter"
+import { formatDistanceToNow } from 'date-fns'
+import { ko } from 'date-fns/locale'
 
 async function getPost(slug) {
   const decodedSlug = decodeURIComponent(slug)
@@ -19,31 +22,50 @@ async function getPost(slug) {
   return post
 }
 
+function formatContent(content) {
+  if (!content) return ''
+  
+  return content
+    .split('\n')
+    .map((paragraph, index) => {
+      if (paragraph.trim() === '') {
+        return `<br key="${index}" />`
+      }
+      return `<p key="${index}" class="mb-4 leading-relaxed">${paragraph}</p>`
+    })
+    .join('')
+}
+
 export async function generateMetadata({ params }) {
   try {
-    const post = await getPost(params.slug)
+    const resolvedParams = await params
+    const post = await getPost(resolvedParams.slug)
     return {
       title: post.title,
       description: post.meta_description || post.excerpt || post.title,
       openGraph: {
         title: post.title,
         description: post.meta_description || post.excerpt || post.title,
-        images: post.featured_image_url ? [post.featured_image_url] : [],
+        type: 'article',
+        publishedTime: post.published_at,
+        images: post.featured_image ? [post.featured_image] : [],
       },
     }
-  } catch {
+  } catch (error) {
     return {
-      title: 'Post Not Found',
-      description: 'The requested post could not be found.',
+      title: '포스트를 찾을 수 없습니다',
+      description: '요청한 포스트를 찾을 수 없습니다.',
     }
   }
 }
 
 export default async function PostPage({ params }) {
-  const post = await getPost(params.slug)
+  const resolvedParams = await params
+  const post = await getPost(resolvedParams.slug)
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      
       <div className="max-w-4xl mx-auto px-4">
         {/* 뒤로가기 버튼 */}
         <div className="mb-6">
@@ -109,7 +131,10 @@ export default async function PostPage({ params }) {
                 </div>
                 <div className="flex items-center">
                   <CalendarDays className="mr-2 h-4 w-4" />
-                  {new Date(post.published_at).toLocaleDateString('ko-KR')}
+                  {formatDistanceToNow(new Date(post.published_at), {
+                    addSuffix: true,
+                    locale: ko,
+                  })}
                 </div>
                 {post.reading_time && (
                   <div className="flex items-center">
@@ -119,7 +144,10 @@ export default async function PostPage({ params }) {
                 )}
                 <div className="flex items-center">
                   <Eye className="mr-2 h-4 w-4" />
-                  {post.view_count?.toLocaleString() || 0}회 조회
+                  <ViewCounter 
+                    slug={resolvedParams.slug} 
+                    initialViewCount={post.view_count || 0}
+                  />회 조회
                 </div>
                 {post.like_count > 0 && (
                   <div className="flex items-center">
@@ -139,7 +167,7 @@ export default async function PostPage({ params }) {
                   fontSize: '1.1rem'
                 }}
                 dangerouslySetInnerHTML={{ 
-                  __html: post.content.replace(/\n/g, '<br />') 
+                  __html: formatContent(post.content) 
                 }}
               />
             </div>
