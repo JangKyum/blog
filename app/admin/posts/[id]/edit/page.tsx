@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Save, Eye, AlertCircle, ArrowLeft, Trash2 } from "lucide-react"
 import { postsService, categoriesService, utils } from "@/lib/posts"
 import { useAuth } from "@/contexts/auth-context"
+import ImageUpload from "@/components/ui/image-upload"
 
 export default function EditPostPage() {
   const router = useRouter()
@@ -297,14 +298,10 @@ export default function EditPostPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="featured_image_url">대표 이미지 URL</Label>
-                  <Input
-                    id="featured_image_url"
-                    type="url"
+                  <ImageUpload
                     value={formData.featured_image_url}
-                    onChange={(e) => handleInputChange('featured_image_url', e.target.value)}
-                    placeholder="https://example.com/image.jpg"
-                    className="mt-1"
+                    onChange={(value) => handleInputChange('featured_image_url', value)}
+                    label="대표 이미지"
                   />
                 </div>
               </CardContent>

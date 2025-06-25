@@ -16,6 +16,7 @@ import { Save, Eye, AlertCircle, ArrowLeft, Plus } from "lucide-react"
 import { postsService, categoriesService, utils } from "@/lib/posts"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase"
+import ImageUpload from "@/components/ui/image-upload"
 
 export default function NewPostPage() {
   const router = useRouter()
@@ -223,14 +224,10 @@ export default function NewPostPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="featured_image_url">대표 이미지 URL</Label>
-                  <Input
-                    id="featured_image_url"
-                    type="url"
+                  <ImageUpload
                     value={formData.featured_image_url}
-                    onChange={(e) => handleInputChange('featured_image_url', e.target.value)}
-                    placeholder="https://example.com/image.jpg"
-                    className="mt-1"
+                    onChange={(url) => handleInputChange('featured_image_url', url)}
+                    label="대표 이미지"
                   />
                 </div>
               </CardContent>

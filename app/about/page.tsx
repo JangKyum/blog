@@ -15,19 +15,17 @@ export default function AboutPage() {
     "Performance",
   ]
 
-  const additionalSkills = ["Python", "Tailwind CSS", "PostgreSQL", "MongoDB", "AWS"]
+  const additionalSkills = ["Figma", "Tailwind CSS", "Git & GitHub", "Vercel"]
 
   const getAdditionalSkillColor = (skill: string) => {
     switch (skill) {
-      case "Python":
+      case "Figma":
         return "bg-blue-100 text-blue-700 border-blue-200"
       case "Tailwind CSS":
         return "bg-cyan-100 text-cyan-800 border-cyan-200"
-      case "PostgreSQL":
-        return "bg-blue-100 text-blue-800 border-blue-200"
-      case "MongoDB":
+      case "Git & GitHub":
         return "bg-green-100 text-green-800 border-green-200"
-      case "AWS":
+      case "Vercel":
         return "bg-orange-100 text-orange-800 border-orange-200"
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
@@ -49,113 +47,127 @@ export default function AboutPage() {
         </div>
 
         {/* Main Content */}
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="space-y-8">
+          {/* Developer Introduction - Full Width */}
           <Card className="border-0 bg-gradient-to-br from-white to-blue-50/30 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500">
-                  <Code className="h-4 w-4 text-white" />
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500">
+                  <Code className="h-5 w-5 text-white" />
                 </div>
                 개발자 소개
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground">
-                안녕하세요! 웹 개발에 열정을 가진 개발자입니다. 사용자 경험을 중시하며, 깔끔하고 효율적인 코드를
-                작성하는 것을 좋아합니다.
+            <CardContent className="space-y-6">
+              <p className="text-gray-600 text-base leading-relaxed">
+                안녕하세요! 처음엔 단순히 만들어보고 싶다는 마음으로 시작했지만,
+                지금은 계속 배우고 성장해 나가는 과정 자체가 좋아졌습니다.
               </p>
-              <p className="text-muted-foreground">
-                새로운 기술을 배우고 공유하는 것을 즐기며, 이 블로그를 통해 개발 경험과 지식을 나누고 있습니다.
+              <p className="text-gray-600 text-base leading-relaxed">
+                무언가를 개발할 때는 기능을 구현하는 것뿐 아니라
+                사용자가 어떻게 느낄지, 같이 일하는 사람이 어떻게 이해할지를 함께 고민합니다.
+              </p>
+              <p className="text-gray-600 text-base leading-relaxed">
+                혼자 차근차근 쌓아가는 것도, 다른 사람과 함께 만들어가는 것도 좋아하며
+                작은 변화라도 기록하며 나아가고 있습니다.
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-0 bg-gradient-to-br from-white to-blue-50/30 shadow-lg hover:shadow-xl transition-all duration-300">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500">
-                  <Heart className="h-4 w-4 text-white" />
+          {/* Interests & Skills Grid */}
+          <div className="grid gap-6 md:grid-cols-3">
+            {/* Interests - Compact */}
+            <Card className="border-0 bg-gradient-to-br from-white to-purple-50/30 shadow-lg hover:shadow-xl transition-all duration-300">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg pb-2">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
+                    <Heart className="h-4 w-4 text-white" />
+                  </div>
+                  관심사
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Zap className="h-3 w-3 text-purple-500" />
+                  <span>웹 성능 최적화</span>
                 </div>
-                관심사
+                <div className="flex items-center gap-2 text-sm">
+                  <Zap className="h-3 w-3 text-purple-500" />
+                  <span>사용자 경험 (UX/UI)</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Zap className="h-3 w-3 text-purple-500" />
+                  <span>재사용 가능한 컴포넌트</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Zap className="h-3 w-3 text-purple-500" />
+                  <span>사이드 프로젝트 개발</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Zap className="h-3 w-3 text-purple-500" />
+                  <span>기록과 공유</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Skills Section - Spans 2 columns */}
+            <Card className="md:col-span-2 border-0 bg-gradient-to-br from-white to-green-50/30 shadow-lg hover:shadow-xl transition-all duration-300">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">기술 스택</CardTitle>
+                <CardDescription>현재 사용하고 있는 주요 기술들</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-600 mb-3">프론트엔드 & 백엔드</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {skills.map((skill) => (
+                        <Badge key={skill} className={getCategoryColor(skill)}>
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-600 mb-3">기타 기술</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {additionalSkills.map((skill) => (
+                        <Badge key={skill} className={getAdditionalSkillColor(skill)}>
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Blog Info */}
+          <Card className="border-0 bg-gradient-to-br from-white to-orange-50/30 shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500 to-red-500">
+                  <Coffee className="h-5 w-5 text-white" />
+                </div>
+                블로그에 대해
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-primary" />
-                <span>웹 성능 최적화</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-primary" />
-                <span>사용자 경험 (UX/UI)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-primary" />
-                <span>모던 웹 기술</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-primary" />
-                <span>오픈소스 기여</span>
-              </div>
+            <CardContent className="space-y-6">
+              <p className="text-gray-600 text-base leading-relaxed">
+                이 블로그는 제가 개발하면서 직접 겪었던 문제, 배운 기술, 삽질했던 기록들을 남기는 곳입니다.
+              </p>
+              <p className="text-gray-600 text-base leading-relaxed">
+                처음부터 잘하진 못했지만, 작업하면서 배운 것들을 차곡차곡 정리하다 보니,
+                지금은 저만의 개발 흐름이 조금씩 생겼습니다.
+              </p>
+              <p className="text-gray-600 text-base leading-relaxed">
+                꼭 전문가만 쓰는 블로그가 아니라, 저처럼 천천히 배우고, 계속 해보려는 사람들에게도
+                작은 도움이 되면 좋겠습니다.
+              </p>
             </CardContent>
           </Card>
         </div>
-
-        {/* Skills Section */}
-        <Card className="mt-8 border-0 bg-gradient-to-br from-white to-blue-50/30 shadow-lg hover:shadow-xl transition-all duration-300">
-          <CardHeader>
-            <CardTitle>기술 스택</CardTitle>
-            <CardDescription>현재 사용하고 있는 주요 기술들입니다</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-medium text-gray-600 mb-2">프론트엔드 & 백엔드</h4>
-                <div className="flex flex-wrap gap-2">
-                  {skills.map((skill) => (
-                    <Badge key={skill} className={getCategoryColor(skill)}>
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium text-gray-600 mb-2">기타 기술</h4>
-                <div className="flex flex-wrap gap-2">
-                  {additionalSkills.map((skill) => (
-                    <Badge key={skill} className={getAdditionalSkillColor(skill)}>
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Blog Info */}
-        <Card className="mt-8 border-0 bg-gradient-to-br from-white to-blue-50/30 shadow-lg hover:shadow-xl transition-all duration-300">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500">
-                <Coffee className="h-4 w-4 text-white" />
-              </div>
-              블로그에 대해
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              이 블로그는 개발하면서 배운 것들, 겪은 문제들과 해결 과정, 그리고 새로운 기술에 대한 탐구를 기록하는
-              공간입니다.
-            </p>
-            <p className="text-muted-foreground">
-              주로 React, Next.js, TypeScript 등 프론트엔드 기술에 대한 글을 작성하지만, 백엔드나 DevOps 관련 내용도
-              다룹니다.
-            </p>
-            <p className="text-muted-foreground">
-              모든 글은 실제 경험을 바탕으로 작성되며, 독자들에게 도움이 되는 실용적인 정보를 제공하려고 노력합니다.
-            </p>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )

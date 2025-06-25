@@ -1,70 +1,46 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
 import Link from "next/link"
+import { notFound } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { CalendarDays, Clock, ArrowLeft, Eye, Heart, Tag, Share2 } from "lucide-react"
 import { postsService } from "@/lib/posts"
+import ShareButton from "./share-button"
 
-export default function PostPage() {
-  const params = useParams()
-  const encodedSlug = params?.slug
-  const slug = encodedSlug ? decodeURIComponent(encodedSlug) : ""
+async function getPost(slug) {
+  const decodedSlug = decodeURIComponent(slug)
+  const { post, error } = await postsService.getPostBySlug(decodedSlug)
   
-  const [post, setPost] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-
-  useEffect(() => {
-    async function loadPost() {
-      if (!slug) return
-      
-      setLoading(true)
-      const { post, error } = await postsService.getPostBySlug(slug)
-      
-      if (error) {
-        setError("포스트를 불러오는데 실패했습니다.")
-      } else {
-        setPost(post)
-      }
-      
-      setLoading(false)
-    }
-    
-    loadPost()
-  }, [slug])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">포스트를 불러오는 중...</p>
-        </div>
-      </div>
-    )
-  }
-
   if (error || !post) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">포스트를 찾을 수 없습니다</h1>
-          <p className="text-gray-600 mb-6">요청하신 포스트가 존재하지 않거나 삭제되었습니다.</p>
-          <Link href="/articles">
-            <Button>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              목록으로 돌아가기
-            </Button>
-          </Link>
-        </div>
-      </div>
-    )
+    notFound()
   }
+  
+  return post
+}
+
+export async function generateMetadata({ params }) {
+  try {
+    const post = await getPost(params.slug)
+    return {
+      title: post.title,
+      description: post.meta_description || post.excerpt || post.title,
+      openGraph: {
+        title: post.title,
+        description: post.meta_description || post.excerpt || post.title,
+        images: post.featured_image_url ? [post.featured_image_url] : [],
+      },
+    }
+  } catch {
+    return {
+      title: 'Post Not Found',
+      description: 'The requested post could not be found.',
+    }
+  }
+}
+
+export default async function PostPage({ params }) {
+  const post = await getPost(params.slug)
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -121,25 +97,19 @@ export default function PostPage() {
                   {post.title}
                 </h1>
 
-                {/* 요약 */}
-                {post.excerpt && (
-                  <p className="text-xl text-gray-600 leading-relaxed">
-                    {post.excerpt}
-                  </p>
-                )}
               </div>
 
               {/* 메타 정보 */}
               <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500">
                 <div className="flex items-center">
                   <Avatar className="mr-2 h-8 w-8">
-                    <AvatarFallback>{post.author_name.substring(0, 2)}</AvatarFallback>
+                    <AvatarFallback>{post.author_name?.substring(0, 2) || 'UN'}</AvatarFallback>
                   </Avatar>
-                  {post.author_name}
+                  {post.author_name || 'Unknown'}
                 </div>
                 <div className="flex items-center">
                   <CalendarDays className="mr-2 h-4 w-4" />
-                  {post.published_at}
+                  {new Date(post.published_at).toLocaleDateString('ko-KR')}
                 </div>
                 {post.reading_time && (
                   <div className="flex items-center">
@@ -198,18 +168,7 @@ export default function PostPage() {
                   <Share2 className="h-4 w-4 text-gray-500" />
                   <span className="text-sm font-medium text-gray-700">공유하기</span>
                 </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(window.location.href)
-                      // 간단한 피드백을 위해 알림 표시 (선택사항)
-                    }}
-                  >
-                    링크 복사
-                  </Button>
-                </div>
+                <ShareButton />
               </div>
             </div>
           </CardContent>

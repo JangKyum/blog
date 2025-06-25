@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Code, Github, BookOpen } from "lucide-react"
+import { Code, Github, FileText } from "lucide-react"
 
 export default function Footer() {
   return (
@@ -25,13 +25,13 @@ export default function Footer() {
           <div className="flex flex-col items-center space-y-3">
             <h3 className="text-sm font-semibold">연결</h3>
             <div className="flex space-x-3">
-              <Link href="#" className="p-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-colors">
+              <Link href="https://github.com/JangKyum" className="p-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-colors">
                 <Github className="h-4 w-4" />
                 <span className="sr-only">GitHub</span>
               </Link>
-              <Link href="#" className="p-2 rounded-lg bg-gray-900 text-white hover:bg-gray-800 transition-colors">
-                <BookOpen className="h-4 w-4" />
-                <span className="sr-only">Notion</span>
+              <Link href="https://jangkyum.github.io/resume/" className="p-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-colors">
+                <FileText className="h-4 w-4" />
+                <span className="sr-only">Resume</span>
               </Link>
             </div>
           </div>

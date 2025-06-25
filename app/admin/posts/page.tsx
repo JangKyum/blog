@@ -272,34 +272,34 @@ export default function AdminPostsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>제목</TableHead>
-                      <TableHead>상태</TableHead>
-                      <TableHead>카테고리</TableHead>
-                      <TableHead>조회수</TableHead>
-                      <TableHead>작성일</TableHead>
-                      <TableHead>수정일</TableHead>
+                      <TableHead className="w-[300px]">제목</TableHead>
+                      <TableHead className="w-[100px]">상태</TableHead>
+                      <TableHead className="w-[150px]">카테고리</TableHead>
+                      <TableHead className="w-[80px]">조회수</TableHead>
+                      <TableHead className="w-[100px]">작성일</TableHead>
+                      <TableHead className="w-[100px]">수정일</TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredPosts.map((post) => (
                       <TableRow key={post.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{post.title}</div>
+                        <TableCell className="max-w-[300px]">
+                          <div className="space-y-1">
+                            <div className="font-medium truncate">{post.title}</div>
                             {post.excerpt && (
-                              <div className="text-sm text-gray-500 mt-1 line-clamp-2">
+                              <div className="text-sm text-gray-500 line-clamp-2 max-w-[280px]">
                                 {post.excerpt}
                               </div>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="min-w-[100px]">
                           {getStatusBadge(post.status)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="max-w-[150px]">
                           <div className="flex flex-wrap gap-1">
-                            {Array.isArray(post.categories) && post.categories.map((category) => {
+                            {Array.isArray(post.categories) && post.categories.slice(0, 2).map((category) => {
                               // 카테고리 데이터 정규화
                               const categoryData = category?.category || category
                               const categoryId = categoryData?.id
@@ -311,36 +311,41 @@ export default function AdminPostsPage() {
                                 <Badge
                                   key={categoryId}
                                   variant="outline"
-                                  className="text-xs"
+                                  className="text-xs max-w-[60px]"
                                 >
-                                  {categoryName}
+                                  <span className="truncate">{categoryName}</span>
                                 </Badge>
                               )
                             })}
+                            {Array.isArray(post.categories) && post.categories.length > 2 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{post.categories.length - 2}
+                              </Badge>
+                            )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="min-w-[80px]">
                           <div className="flex items-center text-sm text-gray-500">
-                            <Eye className="mr-1 h-3 w-3" />
-                            {post.view_count || 0}
+                            <Eye className="mr-1 h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">{post.view_count || 0}</span>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="min-w-[100px]">
                           <div className="flex items-center text-sm text-gray-500">
-                            <Calendar className="mr-1 h-3 w-3" />
-                            {formatDate(post.created_at)}
+                            <Calendar className="mr-1 h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">{formatDate(post.created_at)}</span>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="min-w-[100px]">
                           <div className="flex items-center text-sm text-gray-500">
-                            <Clock className="mr-1 h-3 w-3" />
-                            {formatDate(post.updated_at)}
+                            <Clock className="mr-1 h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">{formatDate(post.updated_at)}</span>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="min-w-[50px]">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>

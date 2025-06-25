@@ -1,13 +1,8 @@
-"use client"
-
-import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, ArrowRight, Eye, Tag } from "lucide-react"
-import { format } from "date-fns"
-import { ko } from "date-fns/locale"
+import { Calendar, Clock, ArrowRight, Eye } from "lucide-react"
 import { postsService } from "@/lib/posts"
 
 interface Category {
@@ -29,59 +24,50 @@ interface Post {
   categories: Category[]
 }
 
-export default function HomePage() {
-  const [recentPosts, setRecentPosts] = useState<Post[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-
-  useEffect(() => {
-    async function loadRecentPosts() {
-      try {
-        const { posts, error } = await postsService.getRecentPosts(6)
-        if (error) {
-          setError("최근 글을 불러오는데 실패했습니다.")
-        } else {
-          setRecentPosts(posts || [])
-        }
-      } catch (err) {
-        setError("최근 글을 불러오는데 실패했습니다.")
-      } finally {
-        setLoading(false)
-      }
+async function getRecentPosts() {
+  try {
+    const { posts, error } = await postsService.getRecentPosts(6)
+    if (error) {
+      return []
     }
+    return posts || []
+  } catch (err) {
+    return []
+  }
+}
 
-    loadRecentPosts()
-  }, [])
+export default async function HomePage() {
+  const recentPosts = await getRecentPosts()
 
   return (
     <div className="container py-8 md:py-12">
       {/* Hero Section */}
-      <section className="text-center py-12 md:py-20">
+      <section className="text-center py-12 md:py-12">
         <div className="space-y-6">
           <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 border border-blue-200">
             <span className="text-sm font-medium text-blue-600">👋 Welcome to my blog</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-            개발 여정과 <br />
-            기술 탐구
+          배우고, 부수고, 다시 만드는 중
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             웹 개발, 새로운 기술, 그리고 개발자로서의 성장 과정을 기록하는 공간입니다
+            <br />
+            <Link href="/about" className="text-blue-500 hover:text-blue-600 transition-colors text-base font-medium">
+              더 자세한 소개 보기 →
+            </Link>
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex justify-center">
             <Button
               asChild
               size="lg"
               className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-purple-500 hover:to-pink-500 transition-all duration-300 shadow-lg hover:shadow-xl"
             >
               <Link href="/articles">
-                모든 글 보기
+                글 둘러보기
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
-            </Button>
-            <Button variant="outline" size="lg" asChild className="border-blue-300 text-blue-600 hover:bg-blue-50">
-              <Link href="/about">About</Link>
             </Button>
           </div>
         </div>
@@ -89,36 +75,12 @@ export default function HomePage() {
 
       {/* Recent Posts Section */}
       <section className="py-12">
-        <div className="flex items-center justify-between mb-8">
+        <div className="mb-8">
           <h2 className="text-3xl font-bold">최근 글</h2>
-          <Button variant="ghost" asChild>
-            <Link href="/articles">
-              모든 글 보기
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+          <p className="text-gray-600 mt-2">새로 작성된 글들을 확인해보세요</p>
         </div>
 
-        {loading ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {[...Array(6)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardHeader>
-                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-3 bg-gray-200 rounded w-full"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : error ? (
-          <div className="text-center py-12">
-            <p className="text-red-600">{error}</p>
-          </div>
-        ) : recentPosts.length === 0 ? (
+        {recentPosts.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">아직 작성된 글이 없습니다.</p>
           </div>
@@ -127,9 +89,9 @@ export default function HomePage() {
             {recentPosts.map((post) => (
               <Card
                 key={post.id}
-                className="group hover:shadow-2xl transition-all duration-300 border-2 border-gray-200 bg-white hover:border-blue-300 hover:-translate-y-1 hover:shadow-blue-100/50 rounded-xl"
+                className="group hover:shadow-2xl transition-all duration-300 border-2 border-gray-200 bg-white hover:border-blue-300 hover:-translate-y-1 hover:shadow-blue-100/50 rounded-xl h-full flex flex-col"
               >
-                <CardHeader>
+                <CardHeader className="flex-1">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-2">
                       {/* 카테고리 표시 */}
@@ -146,7 +108,7 @@ export default function HomePage() {
                                 borderColor: `${category.color}40`
                               }}
                             >
-                              {category.name}
+                              <span className="truncate max-w-[80px]">{category.name}</span>
                             </Badge>
                           ))}
                           {post.categories.length > 2 && (
@@ -157,7 +119,7 @@ export default function HomePage() {
                         </div>
                       )}
                       
-                      <CardTitle className="line-clamp-2">
+                      <CardTitle className="line-clamp-2 min-h-[3rem] leading-relaxed">
                         <Link 
                           href={`/posts/${post.slug}`} 
                           className="hover:text-primary transition-colors"
@@ -167,18 +129,18 @@ export default function HomePage() {
                       </CardTitle>
                     </div>
                   </div>
-                  <CardDescription className="line-clamp-3 text-gray-600 mt-3 leading-relaxed">
+                  <CardDescription className="line-clamp-3 text-gray-600 mt-3 leading-relaxed min-h-[4.5rem]">
                     {post.excerpt || '내용 미리보기가 없습니다.'}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   <div className="space-y-3">
                     {/* 메타 정보 */}
                     <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t border-gray-100">
                       <div className="flex items-center gap-4">
                         <div className="flex items-center">
                           <Calendar className="mr-1 h-3 w-3" />
-                          {format(new Date(post.published_at), "MM/dd", { locale: ko })}
+                          {new Date(post.published_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
                         </div>
                         {post.reading_time && (
                           <div className="flex items-center">
@@ -198,6 +160,22 @@ export default function HomePage() {
             ))}
           </div>
         )}
+      </section>
+
+      {/* CTA Section */}
+      <section className="text-center py-16 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl">
+        <div className="space-y-6">
+          <h3 className="text-2xl font-bold mb-4">개발 여정을 함께 해보세요</h3>
+          <p className="text-gray-600 mb-6 max-w-xl mx-auto">
+            실무 경험, 새로운 기술 탐구, 그리고 성장 스토리가 기다리고 있습니다
+          </p>
+          <Button asChild size="lg" className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-purple-500 hover:to-pink-500 transition-all duration-300">
+            <Link href="/articles">
+              전체 아카이브 탐색
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       </section>
     </div>
   )
