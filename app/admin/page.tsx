@@ -2,270 +2,283 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { FileText, BarChart3, Eye, Edit, Trash2, Save, Send, LogOut, User } from "lucide-react"
+import { FileText, BarChart3, Eye, Edit, Trash2, Save, Send, LogOut, User, Plus } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
+import { postsService } from "@/lib/posts"
+import { format } from "date-fns"
 
-// 샘플 통계 데이터
-const stats = [
-  {
-    title: "총 글 수",
-    value: "24",
-    description: "지난 달 대비 +3",
-    icon: FileText,
-  },
-  {
-    title: "총 조회수",
-    value: "12,543",
-    description: "지난 달 대비 +15%",
-    icon: Eye,
-  },
-  {
-    title: "평균 읽기 시간",
-    value: "6분",
-    description: "지난 달과 동일",
-    icon: BarChart3,
-  },
-]
+interface DashboardStats {
+  totalPosts: number
+  publishedPosts: number
+  draftPosts: number
+  totalViews: number
+}
 
-// 샘플 최근 글 데이터 (새로운 카테고리 포함)
-const recentPosts = [
-  {
-    id: 1,
-    title: "Next.js 15의 새로운 기능들",
-    status: "published",
-    views: 1234,
-    date: "2024-12-10",
-    category: "Next.js",
-  },
-  {
-    id: 2,
-    title: "Vue 3 Composition API 완벽 가이드",
-    status: "published",
-    views: 987,
-    date: "2024-12-08",
-    category: "Vue",
-  },
-  {
-    id: 3,
-    title: "Angular 18 새로운 기능 정리",
-    status: "draft",
-    views: 0,
-    date: "2024-12-05",
-    category: "Angular",
-  },
-]
-
-const getStatColor = (title) => {
-  switch (title) {
-    case "총 글 수":
-      return "from-blue-500 to-purple-500"
-    case "총 조회수":
-      return "from-green-500 to-blue-500"
-    case "평균 읽기 시간":
-      return "from-orange-500 to-red-500"
-    default:
-      return "from-gray-400 to-gray-600"
-  }
+interface RecentPost {
+  id: string
+  title: string
+  status: string
+  view_count: number
+  created_at: string
+  slug: string
 }
 
 export default function AdminPage() {
-  const [title, setTitle] = useState("")
-  const [content, setContent] = useState("")
-  const [tags, setTags] = useState("")
-  const { user, loading, signOut } = useAuth()
   const router = useRouter()
+  const { user, loading, signOut } = useAuth()
+  
+  // 상태 관리
+  const [stats, setStats] = useState<DashboardStats>({
+    totalPosts: 0,
+    publishedPosts: 0,
+    draftPosts: 0,
+    totalViews: 0
+  })
+  const [recentPosts, setRecentPosts] = useState<RecentPost[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState("")
 
-  // 인증 확인
+  // 인증 체크
   useEffect(() => {
     if (!loading && !user) {
       router.push("/auth/login")
     }
   }, [user, loading, router])
 
-  const handleLogout = async () => {
+  // 대시보드 데이터 로딩
+  useEffect(() => {
+    if (user) {
+      loadDashboardData()
+    }
+  }, [user])
+
+  async function loadDashboardData() {
+    setIsLoading(true)
+    try {
+      // 전체 포스트 데이터 가져오기
+      const { posts: allPosts } = await postsService.getAllPostsForAdmin(1, 100)
+      
+      // 통계 계산
+      const publishedPosts = allPosts?.filter(post => post.status === 'published') || []
+      const draftPosts = allPosts?.filter(post => post.status === 'draft') || []
+      const totalViews = publishedPosts.reduce((sum, post) => sum + (post.view_count || 0), 0)
+
+      setStats({
+        totalPosts: allPosts?.length || 0,
+        publishedPosts: publishedPosts.length,
+        draftPosts: draftPosts.length,
+        totalViews
+      })
+
+      // 최근 포스트 설정 (최대 5개)
+      const recent = allPosts?.slice(0, 5).map(post => ({
+        id: post.id,
+        title: post.title,
+        status: post.status,
+        view_count: post.view_count || 0,
+        created_at: post.created_at,
+        slug: post.slug
+      })) || []
+
+      setRecentPosts(recent)
+    } catch (err) {
+      setError("대시보드 데이터를 불러오는데 실패했습니다.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  async function handleSignOut() {
     await signOut()
-    router.push("/auth/login")
+    router.push("/")
   }
 
-  const handleSaveDraft = () => {
-    console.log("초안 저장:", { title, content, tags })
-    // 여기에 초안 저장 로직 구현
-  }
-
-  const handlePublish = () => {
-    console.log("글 게시:", { title, content, tags })
-    // 여기에 글 게시 로직 구현
-  }
-
-  // 로딩 중이거나 인증되지 않은 경우
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">인증 확인 중...</p>
-        </div>
-      </div>
-    )
+  if (loading || isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">로딩 중...</div>
   }
 
   if (!user) {
-    return null // 리다이렉트 중
+    return null
   }
 
   return (
-    <div className="container py-8 md:py-12">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex justify-between items-start mb-4">
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-orange-100 to-red-100 border border-orange-200">
-            <span className="text-sm font-medium text-orange-600">⚡ Admin Panel</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <User className="h-4 w-4" />
-              <span>{user?.email}</span>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4">
+        {/* 헤더 */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">관리자 대시보드</h1>
+              <p className="text-gray-600 mt-2">블로그 관리 및 통계를 확인하세요</p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLogout}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              로그아웃
-            </Button>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <User className="h-4 w-4" />
+                {user.email}
+              </div>
+              <Button variant="outline" onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                로그아웃
+              </Button>
+            </div>
           </div>
         </div>
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-          Admin Dashboard
-        </h1>
-        <p className="text-gray-600 mt-2">블로그 관리 및 새 글 작성</p>
-      </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3 mb-8">
-        {stats.map((stat) => {
-          const Icon = stat.icon
-          return (
-            <Card
-              key={stat.title}
-              className="border-0 bg-gradient-to-br from-white to-gray-50/50 hover:shadow-lg transition-all duration-300"
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
-                <div className={`p-2 rounded-lg bg-gradient-to-br ${getStatColor(stat.title)}`}>
-                  <Icon className="h-4 w-4 text-white" />
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600">{error}</p>
+          </div>
+        )}
+
+        {/* 통계 카드 */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">총 글 수</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalPosts}</div>
+              <p className="text-xs text-muted-foreground">
+                발행: {stats.publishedPosts}개, 초안: {stats.draftPosts}개
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">총 조회수</CardTitle>
+              <Eye className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalViews.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">
+                발행된 글 기준
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">발행된 글</CardTitle>
+              <Send className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.publishedPosts}</div>
+              <p className="text-xs text-muted-foreground">
+                전체의 {stats.totalPosts > 0 ? Math.round((stats.publishedPosts / stats.totalPosts) * 100) : 0}%
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">초안</CardTitle>
+              <Save className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.draftPosts}</div>
+              <p className="text-xs text-muted-foreground">
+                작성 중인 글
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-8 lg:grid-cols-2">
+          {/* 최근 글 */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>최근 글</CardTitle>
+                  <CardDescription>최근에 작성된 글들을 관리하세요</CardDescription>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-                <p className="text-xs text-gray-500">{stat.description}</p>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Recent Posts */}
-        <Card>
-          <CardHeader>
-            <CardTitle>최근 글</CardTitle>
-            <CardDescription>최근에 작성된 글들을 관리하세요</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentPosts.map((post) => (
-                <div key={post.id} className="flex items-start justify-between p-3 border rounded-lg">
-                  <div className="space-y-2 flex-1 min-w-0">
-                    <h4 className="font-medium line-clamp-1 pr-2">{post.title}</h4>
-                    <div className="flex flex-wrap items-center gap-2 text-sm">
-                      <Badge variant={post.status === "published" ? "default" : "secondary"} className="text-xs">
-                        {post.status === "published" ? "게시됨" : "초안"}
-                      </Badge>
-                      <span className="text-muted-foreground">조회수: {post.views}</span>
-                      <span className="text-muted-foreground">{new Date(post.date).toLocaleDateString("ko-KR")}</span>
+                <Button asChild size="sm">
+                  <Link href="/admin/posts">
+                    전체 보기
+                  </Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {recentPosts.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    작성된 글이 없습니다.
+                  </div>
+                ) : (
+                  recentPosts.map((post) => (
+                    <div key={post.id} className="flex items-start justify-between p-3 border rounded-lg">
+                      <div className="space-y-2 flex-1 min-w-0">
+                        <h4 className="font-medium line-clamp-1 pr-2">{post.title}</h4>
+                        <div className="flex flex-wrap items-center gap-2 text-sm">
+                          <Badge variant={post.status === "published" ? "default" : "secondary"} className="text-xs">
+                            {post.status === "published" ? "발행됨" : "초안"}
+                          </Badge>
+                          <span className="text-muted-foreground">조회수: {post.view_count}</span>
+                          <span className="text-muted-foreground">
+                            {format(new Date(post.created_at), "MM/dd")}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+                        {post.status === 'published' && (
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/posts/${post.slug}`} target="_blank">
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/admin/posts/${post.id}/edit`}>
+                            <Edit className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* New Post Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle>새 글 작성</CardTitle>
-            <CardDescription>새로운 블로그 글을 작성하세요</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="title" className="text-sm font-medium">
-                제목
-              </label>
-              <Input
-                id="title"
-                placeholder="글 제목을 입력하세요"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="tags" className="text-sm font-medium">
-                태그
-              </label>
-              <Input
-                id="tags"
-                placeholder="태그를 쉼표로 구분하여 입력하세요"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="content" className="text-sm font-medium">
-                내용
-              </label>
-              <Textarea
-                id="content"
-                placeholder="글 내용을 작성하세요..."
-                className="min-h-[200px]"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-              />
-            </div>
-            <div className="flex gap-2 pt-4">
-              <Button variant="outline" onClick={handleSaveDraft} className="flex-1">
-                <Save className="mr-2 h-4 w-4" />
-                초안 저장
+          {/* 빠른 작업 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>빠른 작업</CardTitle>
+              <CardDescription>자주 사용하는 기능들에 빠르게 접근하세요</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button asChild className="w-full justify-start" size="lg">
+                <Link href="/admin/posts/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  새 글 작성
+                </Link>
               </Button>
-              <Button
-                onClick={handlePublish}
-                className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-blue-500 hover:to-purple-500"
-              >
-                <Send className="mr-2 h-4 w-4" />
-                게시하기
+              
+              <Button asChild variant="outline" className="w-full justify-start" size="lg">
+                <Link href="/admin/posts">
+                  <FileText className="mr-2 h-4 w-4" />
+                  모든 글 관리
+                </Link>
               </Button>
-            </div>
-          </CardContent>
-        </Card>
+              
+              <Button asChild variant="outline" className="w-full justify-start" size="lg">
+                <Link href="/" target="_blank">
+                  <Eye className="mr-2 h-4 w-4" />
+                  블로그 보기
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

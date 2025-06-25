@@ -1,0 +1,358 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
+import { Save, Eye, AlertCircle, ArrowLeft, Plus } from "lucide-react"
+import { postsService, categoriesService, utils } from "@/lib/posts"
+import { useAuth } from "@/contexts/auth-context"
+import { supabase } from "@/lib/supabase"
+
+export default function NewPostPage() {
+  const router = useRouter()
+  const { user, loading } = useAuth()
+  
+  // 폼 상태
+  const [formData, setFormData] = useState({
+    title: "",
+    content: "",
+    status: "draft",
+    tags: "",
+    featured_image_url: "",
+    meta_description: ""
+  })
+  
+  // 카테고리 관련 상태
+  const [categories, setCategories] = useState([])
+  const [selectedCategories, setSelectedCategories] = useState([])
+  
+  // UI 상태
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+
+  // 인증 체크
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/auth/login")
+    }
+  }, [user, loading, router])
+
+  // 카테고리 목록 불러오기
+  useEffect(() => {
+    async function loadCategories() {
+      const { categories, error } = await categoriesService.getAllCategories()
+      if (error) {
+        setError("카테고리를 불러오는데 실패했습니다.")
+      } else {
+        setCategories(categories)
+        
+        // 카테고리가 없으면 기본 카테고리 생성 제안
+        if (categories.length === 0) {
+          setError("카테고리가 없습니다. 먼저 카테고리를 생성해주세요.")
+        }
+      }
+    }
+    loadCategories()
+  }, [])
+
+  // 폼 입력 핸들러
+  function handleInputChange(field, value) {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  // 카테고리 선택 핸들러
+  function handleCategoryToggle(categoryId) {
+    setSelectedCategories(prev => {
+      // 타입 일관성을 위해 모든 ID를 문자열로 변환
+      const stringId = String(categoryId)
+      const stringPrev = prev.map(id => String(id))
+      
+      const newSelection = stringPrev.includes(stringId)
+        ? stringPrev.filter(id => id !== stringId)
+        : [...stringPrev, stringId]
+      return newSelection
+    })
+  }
+
+  // 포스트 저장
+  async function handleSubmit(status = "draft") {
+    if (!formData.title.trim() || !formData.content.trim()) {
+      setError("제목과 내용을 입력해주세요.")
+      return
+    }
+
+    setIsLoading(true)
+    setError("")
+    setSuccess("")
+
+    try {
+      const postData = {
+        ...formData,
+        status,
+        tags: utils.parseTagsString(formData.tags),
+        reading_time: utils.calculateReadingTime(formData.content),
+        categoryIds: selectedCategories,
+        meta_description: formData.meta_description || formData.title
+      }
+
+      const { post, error } = await postsService.createPost(postData)
+      
+      if (error) {
+        setError(error.message)
+      } else {
+        setSuccess(`포스트가 ${status === 'published' ? '발행' : '저장'}되었습니다!`)
+        setTimeout(() => {
+          router.push("/admin/posts")
+        }, 1500)
+      }
+    } catch (err) {
+      setError("포스트 저장 중 오류가 발생했습니다.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">로딩 중...</div>
+  }
+
+  if (!user) {
+    return null
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        {/* 헤더 */}
+        <div className="mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => router.push("/admin/posts")}
+            className="mb-4"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            포스트 목록으로
+          </Button>
+          <h1 className="text-3xl font-bold">새 포스트 작성</h1>
+          <p className="text-gray-600 mt-2">블로그에 새로운 글을 작성하세요.</p>
+        </div>
+
+        {/* 알림 메시지 */}
+        {error && (
+          <Alert className="mb-6 border-red-200 bg-red-50">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-600">{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {success && (
+          <Alert className="mb-6 border-green-200 bg-green-50">
+            <AlertDescription className="text-green-600">{success}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* 메인 콘텐츠 */}
+          <div className="lg:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>기본 정보</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="title">제목 *</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => handleInputChange('title', e.target.value)}
+                    placeholder="포스트 제목을 입력하세요"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="content">내용 *</Label>
+                  <Textarea
+                    id="content"
+                    value={formData.content}
+                    onChange={(e) => handleInputChange('content', e.target.value)}
+                    placeholder="포스트 내용을 입력하세요. Markdown을 지원합니다."
+                    rows={15}
+                    className="mt-1 font-mono"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    예상 읽기 시간: {utils.calculateReadingTime(formData.content)}분
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>SEO 설정</CardTitle>
+                <CardDescription>검색 엔진 최적화를 위한 설정입니다.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="meta_description">메타 설명</Label>
+                  <Textarea
+                    id="meta_description"
+                    value={formData.meta_description}
+                    onChange={(e) => handleInputChange('meta_description', e.target.value)}
+                    placeholder="검색 결과에 표시될 설명 (160자 이내)"
+                    rows={2}
+                    className="mt-1"
+                    maxLength={160}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.meta_description.length}/160
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="featured_image_url">대표 이미지 URL</Label>
+                  <Input
+                    id="featured_image_url"
+                    type="url"
+                    value={formData.featured_image_url}
+                    onChange={(e) => handleInputChange('featured_image_url', e.target.value)}
+                    placeholder="https://example.com/image.jpg"
+                    className="mt-1"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 사이드바 */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>발행 설정</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => handleSubmit("draft")}
+                    disabled={isLoading}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    초안 저장
+                  </Button>
+                  <Button
+                    onClick={() => handleSubmit("published")}
+                    disabled={isLoading}
+                    className="flex-1"
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    발행
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>카테고리</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {categories.length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    사용 가능한 카테고리가 없습니다. 관리자에게 카테고리 생성을 요청해주세요.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {/* 선택된 카테고리 표시 */}
+                    {selectedCategories.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {selectedCategories.map(categoryId => {
+                          const category = categories.find(c => String(c.id) === String(categoryId))
+                          if (!category) return null
+                          return (
+                            <Badge 
+                              key={categoryId} 
+                              variant="secondary"
+                              style={{ 
+                                backgroundColor: `${category.color}15`, 
+                                color: category.color,
+                                borderColor: `${category.color}40`
+                              }}
+                            >
+                              {category.name}
+                            </Badge>
+                          )
+                        })}
+                      </div>
+                    )}
+                    
+                    {categories.map((category) => (
+                      <div key={category.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`category-${category.id}`}
+                          checked={selectedCategories.map(id => String(id)).includes(String(category.id))}
+                          onCheckedChange={() => handleCategoryToggle(category.id)}
+                        />
+                        <Label
+                          htmlFor={`category-${category.id}`}
+                          className="flex items-center space-x-2 cursor-pointer"
+                        >
+                          <span
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <span>{category.name}</span>
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>태그</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div>
+                  <Label htmlFor="tags">태그 (쉼표로 구분)</Label>
+                  <Input
+                    id="tags"
+                    value={formData.tags}
+                    onChange={(e) => handleInputChange('tags', e.target.value)}
+                    placeholder="React, TypeScript, 웹개발"
+                    className="mt-1"
+                  />
+                  {formData.tags && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {utils.parseTagsString(formData.tags).map((tag, index) => (
+                        <Badge key={index} variant="secondary">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+} 

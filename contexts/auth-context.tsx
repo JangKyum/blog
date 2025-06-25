@@ -1,26 +1,54 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState } from "react"
+import React, { createContext, useContext, useEffect, useState, ReactNode } from "react"
 import { auth } from "@/lib/supabase"
+import type { User } from '@supabase/supabase-js'
 
-const AuthContext = createContext<any>(undefined)
+interface AuthContextType {
+  user: User | null
+  loading: boolean
+  signIn: (email: string, password: string) => Promise<any>
+  signOut: () => Promise<any>
+}
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+interface AuthProviderProps {
+  children: ReactNode
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+
     // 초기 세션 확인
-    const getInitialSession = async () => {
-      const { session } = await auth.getSession()
-      setUser(session?.user ?? null)
-      setLoading(false)
+    async function getSession() {
+      try {
+        const { session, error } = await auth.getSession()
+        if (error) {
+          console.error('Error getting session:', error)
+        }
+        return session
+      } catch (error) {
+        return null
+      }
     }
 
-    getInitialSession()
+    getSession().then((session) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
 
     // 인증 상태 변화 감지
-    const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = auth.onAuthStateChange(async (event: any, session: any) => {
       setUser(session?.user ?? null)
       setLoading(false)
     })
@@ -28,9 +56,9 @@ export function AuthProvider({ children }) {
     return () => {
       subscription?.unsubscribe()
     }
-  }, [])
+  }, [mounted])
 
-  const signIn = async (email, password) => {
+  const signIn = async (email: string, password: string) => {
     const { data, error } = await auth.signIn(email, password)
     return { data, error }
   }
@@ -40,11 +68,20 @@ export function AuthProvider({ children }) {
     return { error }
   }
 
-  const value = {
+  const value: AuthContextType = {
     user,
     loading,
     signIn,
     signOut,
+  }
+
+  // 컴포넌트가 마운트되기 전까지는 로딩 상태 표시
+  if (!mounted) {
+    return (
+      <AuthContext.Provider value={{ user: null, loading: true, signIn, signOut }}>
+        {children}
+      </AuthContext.Provider>
+    )
   }
 
   return (
@@ -54,7 +91,7 @@ export function AuthProvider({ children }) {
   )
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext)
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider")
