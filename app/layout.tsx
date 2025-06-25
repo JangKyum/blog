@@ -21,6 +21,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
+      <head>
+        <script 
+          async 
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6125842877688455"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body className={inter.className} suppressHydrationWarning>
         <AuthProvider>
           <div className="min-h-screen flex flex-col">

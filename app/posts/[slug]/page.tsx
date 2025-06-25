@@ -8,6 +8,7 @@ import { CalendarDays, Clock, ArrowLeft, Eye, Heart, Tag, Share2 } from "lucide-
 import { postsService } from "@/lib/posts"
 import ShareButton from "./share-button"
 import ViewCounter from "@/components/view-counter"
+import AdSense from "@/components/adsense"
 import { formatDistanceToNow } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
@@ -157,6 +158,9 @@ export default async function PostPage({ params }) {
                 )}
               </div>
             </div>
+
+            {/* Google AdSense 광고 - 포스트 내용 전에 */}
+            <AdSense adSlot="6423205401" />
 
             {/* 포스트 내용 */}
             <div className="prose prose-lg max-w-none">
