@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Code, Heart, Coffee, Zap } from "lucide-react"
 import { getCategoryColor } from "@/lib/category-colors"
+import AdSense from "@/components/adsense"
 
 export default function AboutPage() {
   const skills = [
@@ -167,6 +168,9 @@ export default function AboutPage() {
               </p>
             </CardContent>
           </Card>
+
+          {/* Google AdSense 광고 - About 페이지 하단 */}
+          <AdSense adSlot="7029710060" />
         </div>
       </div>
     </div>
