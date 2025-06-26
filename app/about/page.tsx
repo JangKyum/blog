@@ -120,7 +120,7 @@ export default function AboutPage() {
               <CardContent>
                 <div className="space-y-4">
                   <div>
-                    <h4 className="text-sm font-medium text-gray-600 mb-3">프론트엔드 & 백엔드</h4>
+                    <h4 className="text-sm font-medium text-gray-600 mb-3">프론트엔드</h4>
                     <div className="flex flex-wrap gap-2">
                       {skills.map((skill) => (
                         <Badge key={skill} className={getCategoryColor(skill)}>

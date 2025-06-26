@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react"
 import { auth } from "@/lib/supabase"
-import type { User } from '@supabase/supabase-js'
+import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
 
 interface AuthContextType {
   user: User | null
@@ -33,11 +33,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     async function getSession() {
       try {
         const { session, error } = await auth.getSession()
+        
+        // Refresh token 오류 처리
         if (error) {
+          // Refresh token 관련 오류는 조용히 처리 (사용자를 로그아웃 상태로 설정)
+          if (error.message?.includes('refresh') || error.message?.includes('Refresh Token')) {
+            console.warn('Session expired, user will be logged out')
+            return null
+          }
+          // 다른 오류는 콘솔에 기록
           console.error('Error getting session:', error)
+          return null
         }
+        
         return session
       } catch (error) {
+        // 네트워크 오류 등 예외 처리
+        console.warn('Failed to get session:', error)
         return null
       }
     }
@@ -48,8 +60,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     })
 
     // 인증 상태 변화 감지
-    const { data: { subscription } } = auth.onAuthStateChange(async (event: any, session: any) => {
-      setUser(session?.user ?? null)
+    const { data: { subscription } } = auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+      // 토큰 만료나 오류 시 사용자를 null로 설정
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        console.warn('Token refresh failed, logging out user')
+        setUser(null)
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null)
+      } else {
+        setUser(session?.user ?? null)
+      }
       setLoading(false)
     })
 
@@ -59,13 +79,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [mounted])
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await auth.signIn(email, password)
-    return { data, error }
+    try {
+      const { data, error } = await auth.signIn(email, password)
+      return { data, error }
+    } catch (error) {
+      return { data: null, error }
+    }
   }
 
   const signOut = async () => {
-    const { error } = await auth.signOut()
-    return { error }
+    try {
+      const { error } = await auth.signOut()
+      // 로그아웃 후 사용자 상태 즉시 업데이트
+      if (!error) {
+        setUser(null)
+      }
+      return { error }
+    } catch (error) {
+      return { error }
+    }
   }
 
   const value: AuthContextType = {
