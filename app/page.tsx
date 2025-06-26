@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, ArrowRight, Eye } from "lucide-react"
-import { postsService } from "@/lib/posts"
+import { postsService, utils } from "@/lib/posts"
 import { Suspense } from "react"
 
 interface Category {
@@ -65,18 +65,23 @@ function PostCardsSkeleton() {
 
 // 포스트 카드 컴포넌트 분리
 function PostCard({ post }: { post: Post }) {
+  // excerpt에서 마크다운 문법 제거
+  const cleanExcerpt = post.excerpt 
+    ? utils.generateExcerpt(post.excerpt, 150)
+    : '내용 미리보기가 없습니다.'
+
   return (
-    <Card className="group hover:shadow-2xl transition-all duration-300 border-2 border-gray-200 bg-white hover:border-blue-300 hover:-translate-y-1 hover:shadow-blue-100/50 rounded-xl h-full flex flex-col">
-      <CardHeader className="flex-1">
+    <Card className="group h-full border-2 border-gray-200 bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:border-gray-300 rounded-xl flex flex-col">
+      <CardHeader className="flex-1 flex flex-col">
         <div className="flex items-start justify-between">
           <div className="flex-1 space-y-2">
             {/* 카테고리 표시 */}
             {post.categories && post.categories.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {post.categories
-                  .filter(category => category && category.id) // null 체크 추가
+                  .filter(category => category && category.id)
                   .slice(0, 2)
-                  .map((category: Category) => {
+                  .map((category) => {
                     const safeColor = getSafeColor(category?.color)
                     return (
                       <Badge 
@@ -101,7 +106,7 @@ function PostCard({ post }: { post: Post }) {
               </div>
             )}
             
-            <CardTitle className="line-clamp-2 min-h-[3rem] leading-relaxed">
+            <CardTitle className="line-clamp-2 h-[3.5rem] leading-[1.75rem] flex items-start">
               <Link 
                 href={`/posts/${post.slug}`} 
                 className="hover:text-primary transition-colors"
@@ -111,11 +116,11 @@ function PostCard({ post }: { post: Post }) {
             </CardTitle>
           </div>
         </div>
-        <CardDescription className="line-clamp-3 text-gray-600 mt-3 leading-relaxed min-h-[4.5rem]">
-          {post.excerpt || '내용 미리보기가 없습니다.'}
+        <CardDescription className="line-clamp-3 text-gray-600 mt-3 leading-relaxed h-[4rem] flex-1">
+          {cleanExcerpt}
         </CardDescription>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className="pt-0 mt-auto">
         <div className="space-y-3">
           {/* 메타 정보 */}
           <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t border-gray-100">

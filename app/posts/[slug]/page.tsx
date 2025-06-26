@@ -11,6 +11,11 @@ import ViewCounter from "@/components/view-counter"
 import AdSense from "@/components/adsense"
 import { formatDistanceToNow } from 'date-fns'
 import { ko } from 'date-fns/locale'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import rehypeHighlight from 'rehype-highlight'
+import rehypeRaw from 'rehype-raw'
+import 'highlight.js/styles/github.css'
 
 async function getPost(slug) {
   const decodedSlug = decodeURIComponent(slug)
@@ -21,20 +26,6 @@ async function getPost(slug) {
   }
   
   return post
-}
-
-function formatContent(content) {
-  if (!content) return ''
-  
-  return content
-    .split('\n')
-    .map((paragraph, index) => {
-      if (paragraph.trim() === '') {
-        return `<br key="${index}" />`
-      }
-      return `<p key="${index}" class="mb-4 leading-relaxed">${paragraph}</p>`
-    })
-    .join('')
 }
 
 export async function generateMetadata({ params }) {
@@ -162,18 +153,145 @@ export default async function PostPage({ params }) {
             {/* Google AdSense 광고 - 포스트 내용 전에 */}
             <AdSense adSlot="6423205401" />
 
-            {/* 포스트 내용 */}
+            {/* 포스트 내용 - ReactMarkdown 사용 */}
             <div className="prose prose-lg max-w-none">
-              <div 
-                className="leading-relaxed"
-                style={{ 
-                  lineHeight: '1.8',
-                  fontSize: '1.1rem'
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight, rehypeRaw]}
+                components={{
+                  // 코드 블록 스타일링
+                  code({ node, inline, className, children, ...props }) {
+                    const match = /language-(\w+)/.exec(className || '')
+                    return !inline && match ? (
+                      <pre className="bg-gray-100 rounded-lg p-4 overflow-x-auto my-4">
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
+                      </pre>
+                    ) : (
+                      <code 
+                        className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono" 
+                        {...props}
+                      >
+                        {children}
+                      </code>
+                    )
+                  },
+                  // 제목 스타일링
+                  h1({ children }) {
+                    return (
+                      <h1 className="text-3xl font-bold mt-8 mb-4 text-gray-900">
+                        {children}
+                      </h1>
+                    )
+                  },
+                  h2({ children }) {
+                    return (
+                      <h2 className="text-2xl font-semibold mt-6 mb-3 text-gray-800">
+                        {children}
+                      </h2>
+                    )
+                  },
+                  h3({ children }) {
+                    return (
+                      <h3 className="text-xl font-medium mt-5 mb-2 text-gray-700">
+                        {children}
+                      </h3>
+                    )
+                  },
+                  // 문단 스타일링
+                  p({ children }) {
+                    return (
+                      <p className="mb-4 leading-relaxed text-gray-700 text-lg">
+                        {children}
+                      </p>
+                    )
+                  },
+                  // 리스트 스타일링
+                  ul({ children }) {
+                    return (
+                      <ul className="mb-4 ml-6 space-y-2 list-disc">
+                        {children}
+                      </ul>
+                    )
+                  },
+                  ol({ children }) {
+                    return (
+                      <ol className="mb-4 ml-6 space-y-2 list-decimal">
+                        {children}
+                      </ol>
+                    )
+                  },
+                  li({ children }) {
+                    return (
+                      <li className="text-gray-700 leading-relaxed">
+                        {children}
+                      </li>
+                    )
+                  },
+                  // 인용문 스타일링
+                  blockquote({ children }) {
+                    return (
+                      <blockquote className="border-l-4 border-blue-500 pl-4 my-4 italic text-gray-600 bg-blue-50 py-2 rounded-r">
+                        {children}
+                      </blockquote>
+                    )
+                  },
+                  // 링크 스타일링
+                  a({ href, children }) {
+                    return (
+                      <a 
+                        href={href} 
+                        className="text-blue-600 hover:text-blue-800 underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {children}
+                      </a>
+                    )
+                  },
+                  // 테이블 스타일링
+                  table({ children }) {
+                    return (
+                      <div className="overflow-x-auto my-4">
+                        <table className="min-w-full border border-gray-300 rounded-lg">
+                          {children}
+                        </table>
+                      </div>
+                    )
+                  },
+                  th({ children }) {
+                    return (
+                      <th className="border border-gray-300 px-4 py-2 bg-gray-100 font-semibold text-left">
+                        {children}
+                      </th>
+                    )
+                  },
+                  td({ children }) {
+                    return (
+                      <td className="border border-gray-300 px-4 py-2">
+                        {children}
+                      </td>
+                    )
+                  },
+                  // 구분선 스타일링
+                  hr() {
+                    return <hr className="my-8 border-gray-300" />
+                  },
+                  // 이미지 스타일링
+                  img({ src, alt }) {
+                    return (
+                      <img 
+                        src={src} 
+                        alt={alt} 
+                        className="max-w-full h-auto rounded-lg shadow-md my-4"
+                      />
+                    )
+                  },
                 }}
-                dangerouslySetInnerHTML={{ 
-                  __html: formatContent(post.content) 
-                }}
-              />
+              >
+                {post.content}
+              </ReactMarkdown>
             </div>
 
             {/* 태그 */}

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Calendar, Clock, Search, Eye, ChevronLeft, ChevronRight } from "lucide-react"
-import { postsService } from "@/lib/posts"
+import { postsService, categoriesService, utils } from "@/lib/posts"
 
 // 타입 정의
 interface Category {
@@ -88,9 +88,20 @@ function PostCardSkeleton() {
 function PostsGrid({ posts, isLoading }: { posts: Post[], isLoading: boolean }) {
   if (isLoading) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...Array(6)].map((_, i) => (
-          <PostCardSkeleton key={i} />
+          <Card key={i} className="h-80 animate-pulse">
+            <CardHeader>
+              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="h-3 bg-gray-200 rounded"></div>
+                <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     )
@@ -105,84 +116,91 @@ function PostsGrid({ posts, isLoading }: { posts: Post[], isLoading: boolean }) 
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {posts.map((post) => (
-        <Card
-          key={post.id}
-          className="group hover:shadow-2xl transition-all duration-300 border-2 border-gray-200 bg-white hover:border-blue-300 hover:-translate-y-1 hover:shadow-blue-100/50 rounded-xl h-full flex flex-col"
-        >
-          <CardHeader className="flex-1">
-            <div className="flex items-start justify-between">
-              <div className="flex-1 space-y-2">
-                {/* 카테고리 표시 */}
-                {post.categories && post.categories.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {post.categories
-                      .filter(category => category && category.id)
-                      .slice(0, 2)
-                      .map((category) => {
-                        const safeColor = getSafeColor(category?.color)
-                        return (
-                          <Badge 
-                            key={category.id} 
-                            variant="secondary" 
-                            className="text-xs font-medium border"
-                            style={{ 
-                              backgroundColor: `${safeColor}15`, 
-                              color: safeColor,
-                              borderColor: `${safeColor}40`
-                            }}
-                          >
-                            <span className="truncate max-w-[80px]">{category?.name || '카테고리'}</span>
-                          </Badge>
-                        )
-                      })}
-                    {post.categories.filter(cat => cat && cat.id).length > 2 && (
-                      <Badge variant="secondary" className="text-xs border border-gray-300 bg-gray-100">
-                        +{post.categories.filter(cat => cat && cat.id).length - 2}
-                      </Badge>
-                    )}
-                  </div>
-                )}
-                
-                <CardTitle className="line-clamp-2 min-h-[3rem] leading-relaxed">
-                  <Link 
-                    href={`/posts/${post.slug}`} 
-                    className="hover:text-primary transition-colors"
-                  >
-                    {post.title}
-                  </Link>
-                </CardTitle>
-              </div>
-            </div>
-            <CardDescription className="line-clamp-3 text-gray-600 mt-3 leading-relaxed min-h-[4.5rem]">
-              {post.excerpt || '내용 미리보기가 없습니다.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t border-gray-100">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center">
-                    <Calendar className="mr-1 h-3 w-3" />
-                    {formatDate(post.published_at)}
-                  </div>
-                  {post.reading_time && (
-                    <div className="flex items-center">
-                      <Clock className="mr-1 h-3 w-3" />
-                      {post.reading_time}분
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {posts.map((post) => {
+        // excerpt에서 마크다운 문법 제거
+        const cleanExcerpt = post.excerpt 
+          ? utils.generateExcerpt(post.excerpt, 150)
+          : '내용 미리보기가 없습니다.'
+
+        return (
+          <Card
+            key={post.id}
+            className="group h-full border-2 border-gray-200 bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:border-gray-300 rounded-xl flex flex-col"
+          >
+            <CardHeader className="flex-1 flex flex-col">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 space-y-2">
+                  {/* 카테고리 표시 */}
+                  {post.categories && post.categories.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {post.categories
+                        .filter(category => category && category.id)
+                        .slice(0, 2)
+                        .map((category) => {
+                          const safeColor = getSafeColor(category?.color)
+                          return (
+                            <Badge 
+                              key={category.id} 
+                              variant="secondary" 
+                              className="text-xs font-medium border"
+                              style={{ 
+                                backgroundColor: `${safeColor}15`, 
+                                color: safeColor,
+                                borderColor: `${safeColor}40`
+                              }}
+                            >
+                              <span className="truncate max-w-[80px]">{category?.name || '카테고리'}</span>
+                            </Badge>
+                          )
+                        })}
+                      {post.categories.filter(cat => cat && cat.id).length > 2 && (
+                        <Badge variant="secondary" className="text-xs border border-gray-300 bg-gray-100">
+                          +{post.categories.filter(cat => cat && cat.id).length - 2}
+                        </Badge>
+                      )}
                     </div>
                   )}
-                </div>
-                <div className="flex items-center">
-                  <Eye className="mr-1 h-3 w-3" />
-                  {post.view_count || 0}
+                  
+                  <CardTitle className="line-clamp-2 h-[3.5rem] leading-[1.75rem] flex items-start">
+                    <Link 
+                      href={`/posts/${post.slug}`} 
+                      className="hover:text-primary transition-colors"
+                    >
+                      {post.title}
+                    </Link>
+                  </CardTitle>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+              <CardDescription className="line-clamp-3 text-gray-600 mt-3 leading-relaxed h-[4rem] flex-1">
+                {cleanExcerpt}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0 mt-auto">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center">
+                      <Calendar className="mr-1 h-3 w-3" />
+                      {formatDate(post.published_at)}
+                    </div>
+                    {post.reading_time && (
+                      <div className="flex items-center">
+                        <Clock className="mr-1 h-3 w-3" />
+                        {post.reading_time}분
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center">
+                    <Eye className="mr-1 h-3 w-3" />
+                    {post.view_count || 0}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   )
 }

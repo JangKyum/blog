@@ -17,13 +17,29 @@ import { postsService, categoriesService, utils } from "@/lib/posts"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase"
 import ImageUpload from "@/components/ui/image-upload"
+import MarkdownPreview from "@/components/markdown-preview"
+
+interface Category {
+  id: string | number
+  name: string
+  color: string
+}
+
+interface FormData {
+  title: string
+  content: string
+  status: string
+  tags: string
+  featured_image_url: string
+  meta_description: string
+}
 
 export default function NewPostPage() {
   const router = useRouter()
   const { user, loading } = useAuth()
   
   // 폼 상태
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     title: "",
     content: "",
     status: "draft",
@@ -33,8 +49,8 @@ export default function NewPostPage() {
   })
   
   // 카테고리 관련 상태
-  const [categories, setCategories] = useState([])
-  const [selectedCategories, setSelectedCategories] = useState([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   
   // UI 상태
   const [isLoading, setIsLoading] = useState(false)
@@ -55,7 +71,7 @@ export default function NewPostPage() {
       if (error) {
         setError("카테고리를 불러오는데 실패했습니다.")
       } else {
-        setCategories(categories)
+        setCategories(categories as Category[])
         
         // 카테고리가 없으면 기본 카테고리 생성 제안
         if (categories.length === 0) {
@@ -67,7 +83,7 @@ export default function NewPostPage() {
   }, [])
 
   // 폼 입력 핸들러
-  function handleInputChange(field, value) {
+  function handleInputChange(field: keyof FormData, value: string) {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -75,7 +91,7 @@ export default function NewPostPage() {
   }
 
   // 카테고리 선택 핸들러
-  function handleCategoryToggle(categoryId) {
+  function handleCategoryToggle(categoryId: string | number) {
     setSelectedCategories(prev => {
       // 타입 일관성을 위해 모든 ID를 문자열로 변환
       const stringId = String(categoryId)
@@ -112,7 +128,12 @@ export default function NewPostPage() {
       const { post, error } = await postsService.createPost(postData)
       
       if (error) {
-        setError(error.message)
+        const errorMessage = typeof error === 'string' 
+          ? error 
+          : (error as any)?.message 
+          ? (error as any).message 
+          : '오류가 발생했습니다.'
+        setError(errorMessage)
       } else {
         setSuccess(`포스트가 ${status === 'published' ? '발행' : '저장'}되었습니다!`)
         setTimeout(() => {
@@ -185,14 +206,12 @@ export default function NewPostPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="content">내용 *</Label>
-                  <Textarea
-                    id="content"
+                  <MarkdownPreview
                     value={formData.content}
-                    onChange={(e) => handleInputChange('content', e.target.value)}
+                    onChange={(value: string) => handleInputChange('content', value)}
                     placeholder="포스트 내용을 입력하세요. Markdown을 지원합니다."
                     rows={15}
-                    className="mt-1 font-mono"
+                    label="내용 *"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     예상 읽기 시간: {utils.calculateReadingTime(formData.content)}분
@@ -337,7 +356,7 @@ export default function NewPostPage() {
                   />
                   {formData.tags && (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {utils.parseTagsString(formData.tags).map((tag, index) => (
+                      {utils.parseTagsString(formData.tags).map((tag: string, index: number) => (
                         <Badge key={index} variant="secondary">
                           {tag}
                         </Badge>
