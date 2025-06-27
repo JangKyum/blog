@@ -50,9 +50,34 @@ import {
 import { postsService } from "@/lib/posts"
 import { useAuth } from "@/contexts/auth-context"
 
+interface Post {
+  id: string
+  title: string
+  content: string
+  excerpt?: string
+  status: 'published' | 'draft' | 'archived'
+  categories: Array<{ 
+    id?: string 
+    name?: string 
+    slug?: string 
+    color?: string
+    category?: {
+      id: string
+      name: string
+      slug: string
+      color?: string
+    }
+  }>
+  view_count: number
+  created_at: string
+  updated_at: string
+  slug: string
+}
+
 // Date 포맷팅을 위한 안전한 유틸리티 함수
-function formatDate(dateString) {
+function formatDate(dateString: string | null): string {
   try {
+    if (!dateString) return '--'
     const date = new Date(dateString)
     return date.toLocaleDateString('ko-KR', { 
       month: '2-digit', 
@@ -68,7 +93,7 @@ export default function AdminPostsPage() {
   const { user, loading } = useAuth()
   
   // 상태 관리
-  const [posts, setPosts] = useState([])
+  const [posts, setPosts] = useState<Post[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
@@ -81,7 +106,7 @@ export default function AdminPostsPage() {
   const [totalPages, setTotalPages] = useState(1)
   
   // 삭제할 포스트 ID
-  const [deletePostId, setDeletePostId] = useState(null)
+  const [deletePostId, setDeletePostId] = useState<string | null>(null)
 
   // 마운트 상태 설정
   useEffect(() => {
@@ -126,13 +151,13 @@ export default function AdminPostsPage() {
       const { posts, error, totalPages } = await postsService.getAllPostsForAdmin(
         currentPage,
         10,
-        status
+        status as any
       )
       
       if (error) {
         setError(error.message)
       } else {
-        setPosts(posts || [])
+        setPosts((posts as Post[]) || [])
         setTotalPages(totalPages || 1)
       }
     } catch (err) {
@@ -143,7 +168,7 @@ export default function AdminPostsPage() {
   }
 
   // 포스트 삭제
-  async function handleDeletePost(postId) {
+  async function handleDeletePost(postId: string) {
     try {
       const { error } = await postsService.deletePost(postId)
       
@@ -160,7 +185,7 @@ export default function AdminPostsPage() {
   }
 
   // 포스트 상태에 따른 배지 색상
-  function getStatusBadge(status) {
+  function getStatusBadge(status: string) {
     switch (status) {
       case 'published':
         return <Badge className="bg-green-500">발행됨</Badge>
@@ -418,7 +443,7 @@ export default function AdminPostsPage() {
             <AlertDialogFooter>
               <AlertDialogCancel>취소</AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => handleDeletePost(deletePostId)}
+                onClick={() => handleDeletePost(deletePostId as string)}
                 className="bg-red-600 hover:bg-red-700"
               >
                 삭제

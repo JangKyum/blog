@@ -12,13 +12,21 @@ import rehypeRaw from 'rehype-raw'
 import 'highlight.js/styles/github.css'
 import { Eye, Edit3 } from 'lucide-react'
 
+interface MarkdownPreviewProps {
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  rows?: number
+  label?: string
+}
+
 export default function MarkdownPreview({ 
   value, 
   onChange, 
   placeholder = "마크다운 내용을 입력하세요...", 
   rows = 15,
   label = "내용"
-}) {
+}: MarkdownPreviewProps) {
   return (
     <div>
       {label && <Label className="text-base font-medium mb-3 block">{label}</Label>}
@@ -56,21 +64,22 @@ export default function MarkdownPreview({
                   rehypePlugins={[rehypeHighlight, rehypeRaw]}
                   components={{
                     // 코드 블록 스타일링
-                    code({ node, inline, className, children, ...props }) {
+                    code({ node, className, children, ...props }: any) {
                       const match = /language-(\w+)/.exec(className || '')
-                      return !inline && match ? (
-                        <pre className="bg-gray-100 rounded-lg p-4 overflow-x-auto my-4">
-                          <code className={className} {...props}>
-                            {children}
-                          </code>
-                        </pre>
-                      ) : (
+                      const isInline = !match
+                      return isInline ? (
                         <code 
                           className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono" 
                           {...props}
                         >
                           {children}
                         </code>
+                      ) : (
+                        <pre className="bg-gray-100 rounded-lg p-4 overflow-x-auto my-4">
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        </pre>
                       )
                     },
                     // 제목 스타일링

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, memo, useCallback } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -15,9 +15,63 @@ const navigation = [
   { name: "Admin", href: "/admin" },
 ]
 
-export default function Header() {
+// 네비게이션 아이템 컴포넌트 메모이제이션
+const NavigationItem = memo(function NavigationItem({ 
+  item, 
+  pathname, 
+  onClick 
+}: { 
+  item: { name: string; href: string }, 
+  pathname: string,
+  onClick?: () => void 
+}) {
+  return (
+    <Link
+      href={item.href}
+      onClick={onClick}
+      className={cn(
+        "text-sm font-medium transition-all duration-200 hover:text-blue-500 relative",
+        pathname === item.href
+          ? "text-blue-500 after:absolute after:bottom-[-4px] after:left-0 after:w-full after:h-0.5 after:bg-gradient-to-r after:from-blue-500 after:to-purple-500 after:rounded-full"
+          : "text-gray-600 hover:text-blue-500",
+      )}
+    >
+      {item.name}
+    </Link>
+  )
+})
+
+// 모바일 네비게이션 아이템 메모이제이션
+const MobileNavigationItem = memo(function MobileNavigationItem({ 
+  item, 
+  pathname, 
+  onClick 
+}: { 
+  item: { name: string; href: string }, 
+  pathname: string,
+  onClick: () => void 
+}) {
+  return (
+    <Link
+      href={item.href}
+      onClick={onClick}
+      className={cn(
+        "text-lg font-medium transition-colors hover:text-primary",
+        pathname === item.href ? "text-primary" : "text-muted-foreground",
+      )}
+    >
+      {item.name}
+    </Link>
+  )
+})
+
+const Header = memo(function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+
+  const handleMobileMenuClose = useCallback(() => {
+    setIsOpen(false)
+  }, [])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md supports-[backdrop-filter]:bg-white/60 shadow-sm">
@@ -34,18 +88,11 @@ export default function Header() {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
           {navigation.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "text-sm font-medium transition-all duration-200 hover:text-blue-500 relative",
-                pathname === item.href
-                  ? "text-blue-500 after:absolute after:bottom-[-4px] after:left-0 after:w-full after:h-0.5 after:bg-gradient-to-r after:from-blue-500 after:to-purple-500 after:rounded-full"
-                  : "text-gray-600 hover:text-blue-500",
-              )}
-            >
-              {item.name}
-            </Link>
+            <NavigationItem 
+              key={item.href} 
+              item={item} 
+              pathname={pathname} 
+            />
           ))}
         </nav>
 
@@ -63,17 +110,12 @@ export default function Header() {
             </SheetHeader>
             <nav className="flex flex-col space-y-4 mt-8">
               {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setIsOpen(false)}
-                  className={cn(
-                    "text-lg font-medium transition-colors hover:text-primary",
-                    pathname === item.href ? "text-primary" : "text-muted-foreground",
-                  )}
-                >
-                  {item.name}
-                </Link>
+                <MobileNavigationItem 
+                  key={item.href} 
+                  item={item} 
+                  pathname={pathname} 
+                  onClick={handleMobileMenuClose}
+                />
               ))}
             </nav>
           </SheetContent>
@@ -81,4 +123,6 @@ export default function Header() {
       </div>
     </header>
   )
-}
+})
+
+export default Header

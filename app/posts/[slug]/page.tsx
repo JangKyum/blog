@@ -16,8 +16,10 @@ import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeRaw from 'rehype-raw'
 import 'highlight.js/styles/github.css'
+import { Suspense } from "react"
+import Image from "next/image"
 
-async function getPost(slug) {
+async function getPost(slug: string) {
   const decodedSlug = decodeURIComponent(slug)
   const { post, error } = await postsService.getPostBySlug(decodedSlug)
   
@@ -28,37 +30,61 @@ async function getPost(slug) {
   return post
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   try {
     const resolvedParams = await params
     const post = await getPost(resolvedParams.slug)
     return {
-      title: post.title,
-      description: post.meta_description || post.excerpt || post.title,
+      title: `${post.title} | codedot 블로그`,
+      description: post.excerpt || post.title,
       openGraph: {
         title: post.title,
-        description: post.meta_description || post.excerpt || post.title,
+        description: post.excerpt || post.title,
         type: 'article',
-        publishedTime: post.published_at,
-        images: post.featured_image ? [post.featured_image] : [],
+        images: post.featured_image_url ? [
+          {
+            url: post.featured_image_url,
+            width: 1200,
+            height: 630,
+            alt: post.title,
+          }
+        ] : undefined,
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: post.title,
+        description: post.excerpt || post.title,
+        images: post.featured_image_url ? [post.featured_image_url] : undefined,
       },
     }
   } catch (error) {
     return {
-      title: '포스트를 찾을 수 없습니다',
-      description: '요청한 포스트를 찾을 수 없습니다.',
+      title: 'Post Not Found | codedot 블로그',
+      description: '요청하신 포스트를 찾을 수 없습니다.',
     }
   }
 }
 
-export default async function PostPage({ params }) {
+export default async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params
-  const post = await getPost(resolvedParams.slug)
+  let post
+  
+  try {
+    post = await getPost(resolvedParams.slug)
+  } catch (error) {
+    return (
+      <div className="container py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">포스트를 찾을 수 없습니다</h1>
+          <p className="text-gray-600">요청하신 포스트가 존재하지 않습니다.</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="container max-w-4xl mx-auto py-8 px-4">
+      <article>
         {/* 뒤로가기 버튼 */}
         <div className="mb-6">
           <Button variant="ghost" asChild>
@@ -72,13 +98,19 @@ export default async function PostPage({ params }) {
         {/* 메인 콘텐츠 */}
         <Card className="mb-8 border-2 border-gray-200 bg-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl">
           <CardContent className="p-8">
-            {/* 대표 이미지 */}
+            {/* 대표 이미지 - Next.js Image로 최적화 */}
             {post.featured_image_url && (
-              <div className="mb-8">
-                <img
+              <div className="mb-8 relative w-full h-64 md:h-80 rounded-lg overflow-hidden bg-gray-100">
+                <Image
                   src={post.featured_image_url}
                   alt={post.title}
-                  className="w-full h-64 object-cover rounded-lg"
+                  fill
+                  className="object-cover transition-opacity duration-300"
+                  priority={true} // LCP 최적화를 위한 우선 로딩
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+                  placeholder="blur"
+                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
+                  style={{ objectFit: 'cover' }}
                 />
               </div>
             )}
@@ -89,7 +121,7 @@ export default async function PostPage({ params }) {
                 {/* 카테고리 */}
                 {post.categories && post.categories.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {post.categories.map((category) => (
+                    {post.categories.map((category: any) => (
                       <Badge
                         key={category.id}
                         variant="secondary"
@@ -151,7 +183,9 @@ export default async function PostPage({ params }) {
             </div>
 
             {/* Google AdSense 광고 - 포스트 내용 전에 */}
-            <AdSense adSlot="6423205401" />
+            <Suspense fallback={<div className="h-32 bg-gray-100 animate-pulse rounded-lg"></div>}>
+              <AdSense adSlot="6423205401" />
+            </Suspense>
 
             {/* 포스트 내용 - ReactMarkdown 사용 */}
             <div className="prose prose-lg max-w-none">
@@ -160,21 +194,22 @@ export default async function PostPage({ params }) {
                 rehypePlugins={[rehypeHighlight, rehypeRaw]}
                 components={{
                   // 코드 블록 스타일링
-                  code({ node, inline, className, children, ...props }) {
+                  code({ node, className, children, ...props }: any) {
                     const match = /language-(\w+)/.exec(className || '')
-                    return !inline && match ? (
-                      <pre className="bg-gray-100 rounded-lg p-4 overflow-x-auto my-4">
-                        <code className={className} {...props}>
-                          {children}
-                        </code>
-                      </pre>
-                    ) : (
+                    const isInline = !match
+                    return isInline ? (
                       <code 
                         className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono" 
                         {...props}
                       >
                         {children}
                       </code>
+                    ) : (
+                      <pre className="bg-gray-100 rounded-lg p-4 overflow-x-auto my-4">
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
+                      </pre>
                     )
                   },
                   // 제목 스타일링
@@ -278,14 +313,26 @@ export default async function PostPage({ params }) {
                   hr() {
                     return <hr className="my-8 border-gray-300" />
                   },
-                  // 이미지 스타일링
+                  // 이미지 최적화 - Next.js Image 사용
                   img({ src, alt }) {
+                    // src가 유효한 문자열인지 확인
+                    if (!src || typeof src !== 'string') {
+                      return null
+                    }
+                    
                     return (
-                      <img 
-                        src={src} 
-                        alt={alt} 
-                        className="max-w-full h-auto rounded-lg shadow-md my-4"
-                      />
+                      <div className="relative w-full my-4 rounded-lg overflow-hidden">
+                        <Image 
+                          src={src} 
+                          alt={alt || ''} 
+                          width={800}
+                          height={400}
+                          className="rounded-lg shadow-md"
+                          sizes="(max-width: 768px) 100vw, 800px"
+                          placeholder="blur"
+                          blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
+                        />
+                      </div>
                     )
                   },
                 }}
@@ -293,6 +340,11 @@ export default async function PostPage({ params }) {
                 {post.content}
               </ReactMarkdown>
             </div>
+
+            {/* Google AdSense 광고 - 포스트 내용 후 */}
+            <Suspense fallback={<div className="h-32 bg-gray-100 animate-pulse rounded-lg"></div>}>
+              <AdSense adSlot="4291623071" />
+            </Suspense>
 
             {/* 태그 */}
             {post.tags && post.tags.length > 0 && (
@@ -302,7 +354,7 @@ export default async function PostPage({ params }) {
                   <span className="text-sm font-medium text-gray-700">태그</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {post.tags.map((tag, index) => (
+                  {post.tags.map((tag: string, index: number) => (
                     <Badge key={index} variant="outline" className="text-sm border-gray-300 hover:border-gray-400 transition-colors">
                       #{tag}
                     </Badge>
@@ -333,7 +385,7 @@ export default async function PostPage({ params }) {
             </Link>
           </Button>
         </div>
-      </div>
+      </article>
     </div>
   )
 } 

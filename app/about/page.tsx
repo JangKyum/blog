@@ -1,8 +1,16 @@
+"use client"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Code, Heart, Coffee, Zap } from "lucide-react"
 import { getCategoryColor } from "@/lib/category-colors"
-import AdSense from "@/components/adsense"
+import dynamic from "next/dynamic"
+
+// AdSense 컴포넌트를 동적으로 로드
+const AdSense = dynamic(() => import("@/components/adsense"), {
+  ssr: false,
+  loading: () => <div className="h-32 bg-gray-100 animate-pulse rounded-lg" />
+})
 
 export default function AboutPage() {
   const skills = [

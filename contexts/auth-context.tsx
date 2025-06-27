@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react"
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react"
 import { auth } from "@/lib/supabase"
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
 
@@ -26,71 +26,70 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setMounted(true)
   }, [])
 
+  // 세션 가져오기 함수를 useCallback으로 메모이제이션
+  const getSession = useCallback(async () => {
+    try {
+      const { session, error } = await auth.getSession()
+      
+      if (error) {
+        if (error.message?.includes('refresh') || error.message?.includes('Refresh Token')) {
+          console.warn('Session expired, user will be logged out')
+          return null
+        }
+        console.error('Error getting session:', error)
+        return null
+      }
+      
+      return session
+    } catch (error) {
+      console.warn('Failed to get session:', error)
+      return null
+    }
+  }, [])
+
   useEffect(() => {
     if (!mounted) return
 
-    // 초기 세션 확인
-    async function getSession() {
-      try {
-        const { session, error } = await auth.getSession()
-        
-        // Refresh token 오류 처리
-        if (error) {
-          // Refresh token 관련 오류는 조용히 처리 (사용자를 로그아웃 상태로 설정)
-          if (error.message?.includes('refresh') || error.message?.includes('Refresh Token')) {
-            console.warn('Session expired, user will be logged out')
-            return null
-          }
-          // 다른 오류는 콘솔에 기록
-          console.error('Error getting session:', error)
-          return null
-        }
-        
-        return session
-      } catch (error) {
-        // 네트워크 오류 등 예외 처리
-        console.warn('Failed to get session:', error)
-        return null
-      }
-    }
-
-    getSession().then((session) => {
+    // 세션 확인을 약간 지연시켜 초기 렌더링 성능 향상
+    const timer = setTimeout(async () => {
+      const session = await getSession()
       setUser(session?.user ?? null)
       setLoading(false)
-    })
+    }, 100) // 100ms 지연
 
     // 인증 상태 변화 감지
-    const { data: { subscription } } = auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-      // 토큰 만료나 오류 시 사용자를 null로 설정
-      if (event === 'TOKEN_REFRESHED' && !session) {
-        console.warn('Token refresh failed, logging out user')
-        setUser(null)
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null)
-      } else {
-        setUser(session?.user ?? null)
+    const { data: { subscription } } = auth.onAuthStateChange(
+      async (event: AuthChangeEvent, session: Session | null) => {
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          console.warn('Token refresh failed, logging out user')
+          setUser(null)
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null)
+        } else {
+          setUser(session?.user ?? null)
+        }
+        setLoading(false)
       }
-      setLoading(false)
-    })
+    )
 
     return () => {
+      clearTimeout(timer)
       subscription?.unsubscribe()
     }
-  }, [mounted])
+  }, [mounted, getSession])
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     try {
       const { data, error } = await auth.signIn(email, password)
       return { data, error }
     } catch (error) {
       return { data: null, error }
     }
-  }
+  }, [])
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
       const { error } = await auth.signOut()
-      // 로그아웃 후 사용자 상태 즉시 업데이트
       if (!error) {
         setUser(null)
       }
@@ -98,7 +97,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       return { error }
     }
-  }
+  }, [])
 
   const value: AuthContextType = {
     user,
