@@ -131,7 +131,7 @@ export default function AboutPage() {
                     <h4 className="text-sm font-medium text-gray-600 mb-3">프론트엔드</h4>
                     <div className="flex flex-wrap gap-2">
                       {skills.map((skill) => (
-                        <Badge key={skill} className={getCategoryColor(skill)}>
+                        <Badge key={skill} variant="static" className={getCategoryColor(skill)}>
                           {skill}
                         </Badge>
                       ))}
@@ -141,7 +141,7 @@ export default function AboutPage() {
                     <h4 className="text-sm font-medium text-gray-600 mb-3">기타 기술</h4>
                     <div className="flex flex-wrap gap-2">
                       {additionalSkills.map((skill) => (
-                        <Badge key={skill} className={getAdditionalSkillColor(skill)}>
+                        <Badge key={skill} variant="static" className={getAdditionalSkillColor(skill)}>
                           {skill}
                         </Badge>
                       ))}
