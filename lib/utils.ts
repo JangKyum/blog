@@ -7,11 +7,17 @@ export function cn(...inputs: any[]) {
 
 // 서울 시간대 기반 날짜 유틸리티
 export const dateUtils = {
-  // 한국 시간대로 현재 시간 반환
+  // 한국 시간대로 현재 시간 반환 (ISO 8601 형식)
   getKoreanTime(): string {
-    return new Date().toLocaleString("en-CA", {
-      timeZone: "Asia/Seoul"
-    }).replace(", ", "T") + "Z"
+    const now = new Date()
+    
+    // 한국 시간대(UTC+9)로 변환
+    const koreanOffset = 9 * 60 // 9시간을 분으로 변환
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000)
+    const koreanTime = new Date(utc + (koreanOffset * 60000))
+    
+    // ISO 형식으로 반환 (YYYY-MM-DDTHH:mm:ss.sssZ)
+    return koreanTime.toISOString()
   },
 
   // 날짜를 한국 시간대로 변환하고 포맷팅
