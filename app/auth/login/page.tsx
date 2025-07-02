@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Lock, User, ArrowRight } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
+import { LoadingSpinner } from "@/components/loading-spinner"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -100,9 +101,9 @@ export default function LoginPage() {
                 className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-purple-500 hover:to-pink-500 transition-all duration-300"
               >
                 {isLoading ? (
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    로그인 중...
+                  <div className="flex items-center justify-center">
+                    <LoadingSpinner size="sm" text="" />
+                    <span className="ml-2">로그인 중...</span>
                   </div>
                 ) : (
                   <>

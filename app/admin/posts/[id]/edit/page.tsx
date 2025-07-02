@@ -15,6 +15,7 @@ import { postsService, categoriesService, utils } from "@/lib/posts"
 import { useAuth } from "@/contexts/auth-context"
 import ImageUpload from "@/components/ui/image-upload"
 import MarkdownPreview from "@/components/markdown-preview"
+import { PageLoadingSpinner } from "@/components/loading-spinner"
 
 interface Category {
   id: string | number
@@ -214,7 +215,7 @@ export default function EditPostPage() {
   }
 
   if (loading || isLoadingPost) {
-    return <div className="flex items-center justify-center min-h-screen">로딩 중...</div>
+    return <PageLoadingSpinner text="포스트를 불러오는 중..." />
   }
 
   if (!user) {

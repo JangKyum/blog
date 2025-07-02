@@ -45,10 +45,14 @@ import {
   Clock,
   Calendar,
   User,
-  AlertCircle
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react"
 import { postsService } from "@/lib/posts"
 import { useAuth } from "@/contexts/auth-context"
+import { PageLoadingSpinner, InlineLoadingSpinner } from "@/components/loading-spinner"
+import { dateUtils } from "@/lib/utils"
 
 interface Post {
   id: string
@@ -72,20 +76,21 @@ interface Post {
   created_at: string
   updated_at: string
   slug: string
+  published_at?: string
 }
 
-// Date 포맷팅을 위한 안전한 유틸리티 함수
+// Date 포맷팅을 위한 안전한 유틸리티 함수 - 한국 시간대 적용
 function formatDate(dateString: string | null): string {
-  try {
-    if (!dateString) return '--'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('ko-KR', { 
-      month: '2-digit', 
-      day: '2-digit' 
-    })
-  } catch (error) {
-    return '--'
+  return dateUtils.formatSimpleDate(dateString)
+}
+
+// 작성일/발행일을 구분해서 표시하는 함수
+function getDisplayDate(post: Post): string {
+  // 발행된 포스트는 발행일, 초안은 작성일 표시
+  if (post.status === 'published' && post.published_at) {
+    return dateUtils.formatSimpleDate(post.published_at)
   }
+  return dateUtils.formatSimpleDate(post.created_at)
 }
 
 export default function AdminPostsPage() {
@@ -104,6 +109,7 @@ export default function AdminPostsPage() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
   
   // 삭제할 포스트 ID
   const [deletePostId, setDeletePostId] = useState<string | null>(null)
@@ -127,6 +133,18 @@ export default function AdminPostsPage() {
     }
   }, [user, currentPage, statusFilter, mounted])
 
+  // 검색어 변경 시 디바운스 적용
+  useEffect(() => {
+    if (!user || !mounted) return
+    
+    const timer = setTimeout(() => {
+      setCurrentPage(1) // 검색 시 첫 페이지로 이동
+      loadPosts()
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
   // Success/Error 메시지 자동 제거
   useEffect(() => {
     if (success) {
@@ -148,17 +166,20 @@ export default function AdminPostsPage() {
     
     try {
       const status = statusFilter === "all" ? null : statusFilter
-      const { posts, error, totalPages } = await postsService.getAllPostsForAdmin(
+      const search = searchTerm.trim()
+      const { posts, error, totalPages, totalCount } = await postsService.getAllPostsForAdmin(
         currentPage,
         10,
-        status as any
+        status as any,
+        (search === '' ? null : search) as any
       )
       
       if (error) {
-        setError(error.message)
+        setError(typeof error === 'string' ? error : (error as any)?.message || '포스트를 불러오는데 실패했습니다.')
       } else {
         setPosts((posts as Post[]) || [])
         setTotalPages(totalPages || 1)
+        setTotalCount(totalCount || 0)
       }
     } catch (err) {
       setError("포스트를 불러오는데 실패했습니다.")
@@ -184,6 +205,13 @@ export default function AdminPostsPage() {
     setDeletePostId(null)
   }
 
+  // 페이지 변경
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
+      setCurrentPage(newPage)
+    }
+  }
+
   // 포스트 상태에 따른 배지 색상
   function getStatusBadge(status: string) {
     switch (status) {
@@ -198,14 +226,8 @@ export default function AdminPostsPage() {
     }
   }
 
-  // 검색된 포스트 필터링
-  const filteredPosts = posts.filter(post =>
-    post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (post.content && post.content.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
-
   if (loading || !mounted) {
-    return <div className="flex items-center justify-center min-h-screen">로딩 중...</div>
+    return <PageLoadingSpinner text="관리자 페이지 준비 중..." />
   }
 
   if (!user) {
@@ -282,15 +304,15 @@ export default function AdminPostsPage() {
           <CardHeader>
             <CardTitle>포스트 목록</CardTitle>
             <CardDescription>
-              총 {filteredPosts.length}개의 포스트
+              총 {totalCount}개의 포스트 (페이지 {currentPage}/{totalPages})
             </CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="text-center py-8">포스트를 불러오는 중...</div>
-            ) : filteredPosts.length === 0 ? (
+              <InlineLoadingSpinner text="포스트를 불러오는 중..." />
+            ) : posts.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                포스트가 없습니다.
+                {searchTerm ? '검색 결과가 없습니다.' : '포스트가 없습니다.'}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -307,7 +329,7 @@ export default function AdminPostsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredPosts.map((post) => (
+                    {posts.map((post) => (
                       <TableRow key={post.id}>
                         <TableCell className="max-w-[300px]">
                           <div className="space-y-1">
@@ -358,7 +380,7 @@ export default function AdminPostsPage() {
                         <TableCell className="min-w-[100px]">
                           <div className="flex items-center text-sm text-gray-500">
                             <Calendar className="mr-1 h-3 w-3 flex-shrink-0" />
-                            <span className="truncate">{formatDate(post.created_at)}</span>
+                            <span className="truncate">{getDisplayDate(post)}</span>
                           </div>
                         </TableCell>
                         <TableCell className="min-w-[100px]">
@@ -406,25 +428,68 @@ export default function AdminPostsPage() {
               </div>
             )}
 
-            {/* 페이지네이션 */}
+            {/* 개선된 페이지네이션 */}
             {totalPages > 1 && (
-              <div className="flex justify-center mt-6 gap-2">
+              <div className="flex justify-center items-center space-x-2 mt-6">
                 <Button
                   variant="outline"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1 || isLoading}
                 >
+                  <ChevronLeft className="h-4 w-4" />
                   이전
                 </Button>
-                <span className="flex items-center px-4">
-                  {currentPage} / {totalPages}
-                </span>
+                
+                {/* 페이지 번호들 */}
+                <div className="flex space-x-1">
+                  {(() => {
+                    const maxVisiblePages = 5
+                    const pageNumbers = []
+                    
+                    if (totalPages <= maxVisiblePages) {
+                      // 총 페이지가 5개 이하인 경우 모든 페이지 표시
+                      for (let i = 1; i <= totalPages; i++) {
+                        pageNumbers.push(i)
+                      }
+                    } else {
+                      // 총 페이지가 5개 초과인 경우
+                      let startPage = Math.max(1, currentPage - 2)
+                      let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1)
+                      
+                      // 끝 페이지가 총 페이지에 가까우면 시작 페이지 조정
+                      if (endPage === totalPages) {
+                        startPage = Math.max(1, endPage - maxVisiblePages + 1)
+                      }
+                      
+                      for (let i = startPage; i <= endPage; i++) {
+                        pageNumbers.push(i)
+                      }
+                    }
+                    
+                    return pageNumbers.map((pageNum) => (
+                      <Button
+                        key={`admin-page-${pageNum}`}
+                        variant={pageNum === currentPage ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handlePageChange(pageNum)}
+                        disabled={isLoading}
+                        className="w-10"
+                      >
+                        {pageNum}
+                      </Button>
+                    ))
+                  })()}
+                </div>
+
                 <Button
                   variant="outline"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages || isLoading}
                 >
                   다음
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             )}

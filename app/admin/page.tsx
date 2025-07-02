@@ -12,6 +12,7 @@ import { FileText, BarChart3, Eye, Edit, Trash2, Save, Send, LogOut, User, Plus 
 import { useAuth } from "@/contexts/auth-context"
 import { postsService } from "@/lib/posts"
 import { format } from "date-fns"
+import { dateUtils } from "@/lib/utils"
 
 interface DashboardStats {
   totalPosts: number
@@ -26,6 +27,7 @@ interface RecentPost {
   status: string
   view_count: number
   created_at: string
+  published_at?: string
   slug: string
 }
 
@@ -83,6 +85,7 @@ export default function AdminPage() {
         status: post.status,
         view_count: post.view_count || 0,
         created_at: post.created_at,
+        published_at: post.published_at,
         slug: post.slug
       })) || []
 
@@ -224,7 +227,9 @@ export default function AdminPage() {
                           </Badge>
                           <span className="text-muted-foreground">조회수: {post.view_count}</span>
                           <span className="text-muted-foreground">
-                            {format(new Date(post.created_at), "MM/dd")}
+                            {post.status === 'published' && post.published_at 
+                              ? dateUtils.formatSimpleDate(post.published_at)
+                              : dateUtils.formatSimpleDate(post.created_at)}
                           </span>
                         </div>
                       </div>

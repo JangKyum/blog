@@ -92,22 +92,21 @@ const nextConfig = {
         },
       }
       
-      // 불필요한 모듈 제거
+    
       config.resolve.alias = {
         ...config.resolve.alias,
-        // moment.js 대신 day.js 사용 권장
         'moment': false,
       }
     }
     
-    // 개발 모드 최적화
-    if (dev) {
-      config.watchOptions = {
-        poll: 1000,
-        aggregateTimeout: 300,
-        ignored: /node_modules/,
-      }
-    }
+    // 개발 모드 최적화 - watchOptions 제거하여 Fast Refresh 무한 루프 방지
+    // if (dev) {
+    //   config.watchOptions = {
+    //     poll: 1000,
+    //     aggregateTimeout: 300,
+    //     ignored: /node_modules/,
+    //   }
+    // }
     
     return config
   },

@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Calendar, Clock, Search, Eye, ChevronLeft, ChevronRight } from "lucide-react"
 import { postsService, categoriesService, utils } from "@/lib/posts"
+import { LoadingSpinner } from "@/components/loading-spinner"
+import { dateUtils } from "@/lib/utils"
 
 // 타입 정의
 interface Category {
@@ -47,17 +49,9 @@ function getSafeColor(color: string | null | undefined): string {
   return color
 }
 
-// 안전한 날짜 포맷팅 함수
+// 안전한 날짜 포맷팅 함수 - 한국 시간대 적용
 function formatDate(dateString: string): string {
-  try {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('ko-KR', { 
-      month: '2-digit', 
-      day: '2-digit' 
-    })
-  } catch (error) {
-    return '--'
-  }
+  return dateUtils.formatSimpleDate(dateString)
 }
 
 // 로딩 스켈레톤 컴포넌트
@@ -168,10 +162,13 @@ const PostCard = memo(function PostCard({ post }: { post: Post }) {
 function PostsGrid({ posts, isLoading }: { posts: Post[], isLoading: boolean }) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(6)].map((_, i) => (
-          <PostCardSkeleton key={i} />
-        ))}
+      <div className="space-y-6">
+        <LoadingSpinner size="lg" text="포스트를 불러오는 중..." />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <PostCardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     )
   }
@@ -350,13 +347,33 @@ export default function ArticlesClient({
           
           {/* 페이지 번호들 */}
           <div className="flex space-x-1">
-            {Array.from({ length: Math.min(5, totalPages_) }, (_, i) => {
-              const pageNum = Math.max(1, Math.min(page - 2 + i, totalPages_ - 4 + i))
-              if (pageNum > totalPages_) return null
+            {(() => {
+              const maxVisiblePages = 5
+              const pageNumbers = []
               
-              return (
+              if (totalPages_ <= maxVisiblePages) {
+                // 총 페이지가 5개 이하인 경우 모든 페이지 표시
+                for (let i = 1; i <= totalPages_; i++) {
+                  pageNumbers.push(i)
+                }
+              } else {
+                // 총 페이지가 5개 초과인 경우
+                let startPage = Math.max(1, page - 2)
+                let endPage = Math.min(totalPages_, startPage + maxVisiblePages - 1)
+                
+                // 끝 페이지가 총 페이지에 가까우면 시작 페이지 조정
+                if (endPage === totalPages_) {
+                  startPage = Math.max(1, endPage - maxVisiblePages + 1)
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                  pageNumbers.push(i)
+                }
+              }
+              
+              return pageNumbers.map((pageNum) => (
                 <Button
-                  key={pageNum}
+                  key={`page-${pageNum}`}
                   variant={pageNum === page ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => handlePageChange(pageNum)}
@@ -365,8 +382,8 @@ export default function ArticlesClient({
                 >
                   {pageNum}
                 </Button>
-              )
-            })}
+              ))
+            })()}
           </div>
 
           <Button

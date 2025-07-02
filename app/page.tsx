@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, ArrowRight, Eye } from "lucide-react"
 import { postsService, utils } from "@/lib/posts"
 import { Suspense, memo } from "react"
+import { LoadingSpinner } from "@/components/loading-spinner"
+import { dateUtils } from "@/lib/utils"
 
 interface Category {
   id: string
@@ -36,29 +38,32 @@ function getSafeColor(color: string | null | undefined): string {
 // 로딩 스켈레톤 컴포넌트
 function PostCardsSkeleton() {
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {[...Array(6)].map((_, i) => (
-        <Card key={i} className="h-full flex flex-col animate-pulse">
-          <CardHeader className="flex-1">
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-              <div className="h-6 bg-gray-200 rounded"></div>
-              <div className="h-6 bg-gray-200 rounded w-4/5"></div>
-            </div>
-            <div className="space-y-2 mt-3">
-              <div className="h-4 bg-gray-200 rounded"></div>
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="flex justify-between">
-              <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+    <div className="space-y-8">
+      <LoadingSpinner size="lg" text="최근 글을 불러오는 중..." />
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {[...Array(6)].map((_, i) => (
+          <Card key={i} className="h-full flex flex-col animate-pulse">
+            <CardHeader className="flex-1">
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                <div className="h-6 bg-gray-200 rounded"></div>
+                <div className="h-6 bg-gray-200 rounded w-4/5"></div>
+              </div>
+              <div className="space-y-2 mt-3">
+                <div className="h-4 bg-gray-200 rounded"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex justify-between">
+                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   )
 }
@@ -123,7 +128,7 @@ const PostCard = memo(function PostCard({ post }: { post: Post }) {
               <div className="flex items-center gap-4">
                 <div className="flex items-center">
                   <Calendar className="mr-1 h-3 w-3" />
-                  {new Date(post.published_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
+                  {dateUtils.formatSimpleDate(post.published_at)}
                 </div>
                 {post.reading_time && (
                   <div className="flex items-center">

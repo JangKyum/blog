@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase"
 import ImageUpload from "@/components/ui/image-upload"
 import MarkdownPreview from "@/components/markdown-preview"
+import { PageLoadingSpinner } from "@/components/loading-spinner"
 
 interface Category {
   id: string | number
@@ -148,7 +149,7 @@ export default function NewPostPage() {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">로딩 중...</div>
+    return <PageLoadingSpinner text="새 포스트 작성 페이지 준비 중..." />
   }
 
   if (!user) {

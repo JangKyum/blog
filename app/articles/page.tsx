@@ -31,11 +31,8 @@ interface Post {
 
 async function getInitialData(searchTerm: string = '', selectedCategory: string = '', page: number = 1) {
   try {
-    const categoryFilter = selectedCategory || null
     const [postsResult, categoriesResult] = await Promise.all([
-      searchTerm 
-        ? postsService.searchPosts(searchTerm, page, 12, categoryFilter as any)
-        : postsService.getAllPosts(page, 12, categoryFilter as any),
+      (postsService as any).getAllPosts(page, 12, searchTerm || undefined, selectedCategory || undefined),
       categoriesService.getAllCategories()
     ])
 

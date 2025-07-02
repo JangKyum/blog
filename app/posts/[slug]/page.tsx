@@ -18,6 +18,7 @@ import rehypeRaw from 'rehype-raw'
 import 'highlight.js/styles/github.css'
 import { Suspense } from "react"
 import Image from "next/image"
+import { dateUtils } from "@/lib/utils"
 
 async function getPost(slug: string) {
   const decodedSlug = decodeURIComponent(slug)
@@ -155,10 +156,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
                 </div>
                 <div className="flex items-center">
                   <CalendarDays className="mr-2 h-4 w-4" />
-                  {formatDistanceToNow(new Date(post.published_at), {
-                    addSuffix: true,
-                    locale: ko,
-                  })}
+                  {dateUtils.formatKoreanDateTime(post.published_at)}
                 </div>
                 {post.reading_time && (
                   <div className="flex items-center">
