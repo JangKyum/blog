@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/auth/
+Disallow: /api/admin/
+
+# 주요 페이지들
+Allow: /posts/
+Allow: /articles/
+Allow: /about/
+
+# Sitemap 위치
+Sitemap: https://codedot-blog.vercel.app/sitemap.xml
+
+# 크롤링 속도 조절 (선택사항)
+Crawl-delay: 1 
