@@ -11,9 +11,29 @@ export const metadata: Metadata = {
   description: "개발과 기술에 대한 이야기를 나누는 공간입니다.",
   generator: 'Next.js',
   icons: {
-    icon: '/favicon.png',
+    icon: [
+      { url: '/favicon.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon.png', sizes: '96x96', type: 'image/png' },
+    ],
     shortcut: '/favicon.png',
-    apple: '/favicon.png',
+    apple: [
+      { url: '/favicon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
+  manifest: '/site.webmanifest',
+  openGraph: {
+    title: "codedot 블로그",
+    description: "개발과 기술에 대한 이야기를 나누는 공간입니다.",
+    url: 'https://your-domain.com',
+    siteName: 'codedot 블로그',
+    locale: 'ko_KR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: "codedot 블로그",
+    description: "개발과 기술에 대한 이야기를 나누는 공간입니다.",
   },
 }
 
@@ -28,6 +48,25 @@ export default function RootLayout({
         {/* DNS Prefetch for external resources */}
         <link rel="dns-prefetch" href="//pagead2.googlesyndication.com" />
         <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossOrigin="" />
+        
+        {/* 구조화된 데이터 - Website */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "codedot 블로그",
+              "description": "개발과 기술에 대한 이야기를 나누는 공간입니다.",
+              "url": "https://codedot-blog.vercel.app",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://codedot-blog.vercel.app/search?q={search_term_string}",
+                "query-input": "required name=search_term_string"
+              }
+            })
+          }}
+        />
       </head>
       <body suppressHydrationWarning>
         <AuthProvider>

@@ -1,0 +1,21 @@
+{
+  "name": "codedot 블로그",
+  "short_name": "codedot",
+  "description": "개발과 기술에 대한 이야기를 나누는 공간입니다.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+} 
