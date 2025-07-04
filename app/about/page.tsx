@@ -21,7 +21,6 @@ export default function AboutPage() {
     "TypeScript",
     "JavaScript",
     "CSS",
-    "Performance",
   ]
 
   const additionalSkills = ["Figma", "Tailwind CSS", "Git & GitHub", "Vercel"]
@@ -29,13 +28,13 @@ export default function AboutPage() {
   const getAdditionalSkillColor = (skill: string) => {
     switch (skill) {
       case "Figma":
-        return "bg-blue-100 text-blue-700 border-blue-200"
+        return "bg-purple-100 text-purple-800 border-purple-200"
       case "Tailwind CSS":
-        return "bg-cyan-100 text-cyan-800 border-cyan-200"
+        return "bg-teal-100 text-teal-800 border-teal-200"
       case "Git & GitHub":
-        return "bg-green-100 text-green-800 border-green-200"
+        return "bg-gray-100 text-gray-800 border-gray-200"
       case "Vercel":
-        return "bg-orange-100 text-orange-800 border-orange-200"
+        return "bg-gray-900 text-white border-gray-700"
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
     }

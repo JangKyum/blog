@@ -129,6 +129,51 @@ const config = {
           700: "#0e7490",
           800: "#155e75",
         },
+        sky: {
+          50: "#f0f9ff",
+          100: "#e0f2fe",
+          200: "#bae6fd",
+          500: "#0ea5e9",
+          600: "#0284c7",
+          700: "#0369a1",
+          800: "#075985",
+        },
+        indigo: {
+          50: "#eef2ff",
+          100: "#e0e7ff",
+          200: "#c7d2fe",
+          500: "#6366f1",
+          600: "#4f46e5",
+          700: "#4338ca",
+          800: "#3730a3",
+        },
+        violet: {
+          50: "#f5f3ff",
+          100: "#ede9fe",
+          200: "#ddd6fe",
+          500: "#8b5cf6",
+          600: "#7c3aed",
+          700: "#6d28d9",
+          800: "#5b21b6",
+        },
+        emerald: {
+          50: "#ecfdf5",
+          100: "#d1fae5",
+          200: "#a7f3d0",
+          500: "#10b981",
+          600: "#059669",
+          700: "#047857",
+          800: "#065f46",
+        },
+        teal: {
+          50: "#f0fdfa",
+          100: "#ccfbf1",
+          200: "#99f6e4",
+          500: "#14b8a6",
+          600: "#0d9488",
+          700: "#0f766e",
+          800: "#115e59",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -158,7 +203,7 @@ const config = {
   plugins: [require("tailwindcss-animate")],
   safelist: [
     // 기본 색상
-    ...["blue", "red", "yellow", "green", "gray", "cyan", "purple", "pink", "orange"].flatMap(color => [
+    ...["blue", "red", "yellow", "green", "gray", "cyan", "purple", "pink", "orange", "sky", "indigo", "violet", "emerald", "teal"].flatMap(color => [
       `bg-${color}-100`,
       `text-${color}-700`,
       `text-${color}-800`,
