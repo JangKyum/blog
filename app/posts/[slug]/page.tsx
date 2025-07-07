@@ -35,13 +35,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   try {
     const resolvedParams = await params
     const post = await getPost(resolvedParams.slug)
+    
+    // meta_description이 있으면 우선 사용, 없으면 excerpt, 그것도 없으면 title 사용
+    const description = post.meta_description || post.excerpt || post.title
+    
     return {
       title: `${post.title} | codedot 블로그`,
-      description: post.excerpt || post.title,
+      description: description,
+      keywords: post.tags ? post.tags.join(', ') : undefined,
       openGraph: {
         title: post.title,
-        description: post.excerpt || post.title,
+        description: description,
         type: 'article',
+        publishedTime: post.published_at,
+        authors: [post.author_name || 'Unknown'],
+        tags: post.tags || [],
         images: post.featured_image_url ? [
           {
             url: post.featured_image_url,
@@ -54,7 +62,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       twitter: {
         card: 'summary_large_image',
         title: post.title,
-        description: post.excerpt || post.title,
+        description: description,
         images: post.featured_image_url ? [post.featured_image_url] : undefined,
       },
     }
@@ -85,6 +93,42 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
 
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4">
+      {/* 구조화된 데이터 - Article */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
+            "headline": post.title,
+            "description": post.meta_description || post.excerpt || post.title,
+            "image": post.featured_image_url ? [post.featured_image_url] : undefined,
+            "author": {
+              "@type": "Person",
+              "name": post.author_name || "Unknown"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "codedot 블로그",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://codedot-blog.vercel.app/favicon.png"
+              }
+            },
+            "datePublished": post.published_at,
+            "dateModified": post.updated_at || post.published_at,
+            "mainEntityOfPage": {
+              "@type": "WebPage",
+              "@id": `https://codedot-blog.vercel.app/posts/${resolvedParams.slug}`
+            },
+            "keywords": post.tags ? post.tags.join(', ') : undefined,
+            "articleSection": post.categories && post.categories.length > 0 ? post.categories[0].name : undefined,
+            "wordCount": post.content ? post.content.split(' ').length : undefined,
+            "timeRequired": post.reading_time ? `PT${post.reading_time}M` : undefined
+          })
+        }}
+      />
+      
       <article>
         {/* 뒤로가기 버튼 */}
         <div className="mb-6">
