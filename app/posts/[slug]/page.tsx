@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { CalendarDays, Clock, ArrowLeft, Eye, Heart, Tag, Share2 } from "lucide-react"
+import { CalendarDays, Clock, ArrowLeft, Eye, Heart, Tag } from "lucide-react"
 import { postsService } from "@/lib/posts"
 import ShareButton from "./share-button"
 import ViewCounter from "@/components/view-counter"
@@ -405,13 +405,9 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
               </div>
             )}
 
-            {/* 공유 버튼 */}
+            {/* 링크 복사 섹션 */}
             <div className="mt-8 pt-6 border-t">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Share2 className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm font-medium text-gray-700">공유하기</span>
-                </div>
+              <div className="flex justify-end">
                 <ShareButton />
               </div>
             </div>
@@ -421,7 +417,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         {/* 하단 네비게이션 */}
         <div className="text-center">
           <Button asChild>
-            <Link href="/">
+            <Link href="/articles">
               <ArrowLeft className="mr-2 h-4 w-4" />
               더 많은 글 보기
             </Link>
