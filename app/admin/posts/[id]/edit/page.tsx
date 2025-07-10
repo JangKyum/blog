@@ -224,7 +224,7 @@ export default function EditPostPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-4">
         {/* 헤더 */}
         <div className="mb-8">
           <Button
@@ -266,9 +266,9 @@ export default function EditPostPage() {
           </Alert>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-8">
           {/* 메인 콘텐츠 */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-4 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>기본 정보</CardTitle>
@@ -334,10 +334,10 @@ export default function EditPostPage() {
           </div>
 
           {/* 사이드바 */}
-          <div className="space-y-6">
+          <div className="lg:col-span-2 space-y-5">
             <Card>
-              <CardHeader>
-                <CardTitle>발행 설정</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">발행 설정</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
@@ -367,10 +367,50 @@ export default function EditPostPage() {
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>카테고리</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">포스트 정보</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
+                <div className="text-sm space-y-2.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">글자 수</span>
+                    <Badge variant="outline" className="text-xs">
+                      {formData.content.length.toLocaleString()}자
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">읽기 시간</span>
+                    <Badge variant="outline" className="text-xs">
+                      {utils.calculateReadingTime(formData.content)}분
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">카테고리</span>
+                    <Badge variant="outline" className="text-xs">
+                      {selectedCategories.length}개
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">태그</span>
+                    <Badge variant="outline" className="text-xs">
+                      {utils.parseTagsString(formData.tags).length}개
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">상태</span>
+                    <Badge variant="outline" className="text-xs">
+                      {formData.status === 'published' ? '발행됨' : '초안'}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">카테고리</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
                 <div className="space-y-3">
                   {categories.map((category) => (
                     <div key={category.id} className="flex items-center space-x-2">
@@ -381,10 +421,10 @@ export default function EditPostPage() {
                       />
                       <Label
                         htmlFor={`category-${category.id}`}
-                        className="flex items-center space-x-2 cursor-pointer"
+                        className="flex items-center space-x-2 cursor-pointer text-sm"
                       >
                         <span
-                          className="w-3 h-3 rounded-full"
+                          className="w-2.5 h-2.5 rounded-full"
                           style={{ backgroundColor: category.color }}
                         />
                         <span>{category.name}</span>
@@ -396,28 +436,58 @@ export default function EditPostPage() {
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>태그</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">태그</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 <div>
-                  <Label htmlFor="tags">태그 (쉼표로 구분)</Label>
+                  <Label htmlFor="tags" className="text-sm">태그 (쉼표로 구분)</Label>
                   <Input
                     id="tags"
                     value={formData.tags}
                     onChange={(e) => handleInputChange('tags', e.target.value)}
                     placeholder="React, TypeScript, 웹개발"
-                    className="mt-1"
+                    className="mt-2"
                   />
                   {formData.tags && (
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    <div className="flex flex-wrap gap-1.5 mt-3">
                       {utils.parseTagsString(formData.tags).map((tag: string, index: number) => (
-                        <Badge key={index} variant="secondary">
+                        <Badge key={index} variant="secondary" className="text-xs">
                           {tag}
                         </Badge>
                       ))}
                     </div>
                   )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">작성 팁</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-xs text-gray-600 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-0.5 text-sm">•</span>
+                    <span>제목은 검색에 최적화된 키워드를 포함하세요</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-0.5 text-sm">•</span>
+                    <span>메타 설명은 150-160자 내외로 작성하세요</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-0.5 text-sm">•</span>
+                    <span>적절한 헤더(H1, H2, H3)로 구조를 만드세요</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-0.5 text-sm">•</span>
+                    <span>대표 이미지는 1200x630px 비율을 권장합니다</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-0.5 text-sm">•</span>
+                    <span>태그는 3-5개 정도가 적당합니다</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
