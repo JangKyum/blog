@@ -408,7 +408,10 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
             {/* 링크 복사 섹션 */}
             <div className="mt-8 pt-6 border-t">
               <div className="flex justify-end">
-                <ShareButton />
+                <ShareButton 
+                  initialLikeCount={post.like_count || 0}
+                  postSlug={resolvedParams.slug}
+                />
               </div>
             </div>
           </CardContent>

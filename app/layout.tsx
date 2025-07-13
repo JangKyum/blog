@@ -5,6 +5,7 @@ import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { AuthProvider } from "@/contexts/auth-context"
 import ClientAdSenseScript from "@/components/client-adsense-script"
+import { Toaster } from "sonner"
 
 export const metadata: Metadata = {
   title: "codedot 블로그",
@@ -78,6 +79,12 @@ export default function RootLayout({
         </AuthProvider>
         {/* AdSense 스크립트를 지연 로드 */}
         <ClientAdSenseScript />
+        <Toaster 
+          position="top-right"
+          richColors
+          closeButton
+          duration={3000}
+        />
       </body>
     </html>
   )
