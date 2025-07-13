@@ -385,7 +385,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
 
             {/* Google AdSense 광고 - 포스트 내용 후 */}
             <Suspense fallback={<div className="h-32 bg-gray-100 animate-pulse rounded-lg"></div>}>
-              <AdSense adSlot="4291623071" />
+              <AdSense adSlot="8503633328" />
             </Suspense>
 
             {/* 태그 */}
