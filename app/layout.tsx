@@ -6,6 +6,7 @@ import Footer from "@/components/footer"
 import { AuthProvider } from "@/contexts/auth-context"
 import ClientAdSenseScript from "@/components/client-adsense-script"
 import { Toaster } from "sonner"
+import VisitTracker from "@/components/visit-tracker"
 
 export const metadata: Metadata = {
   title: "codedot 블로그",
@@ -76,6 +77,7 @@ export default function RootLayout({
             <main className="flex-1">{children}</main>
             <Footer />
           </div>
+          <VisitTracker />
         </AuthProvider>
         {/* AdSense 스크립트를 지연 로드 */}
         <ClientAdSenseScript />

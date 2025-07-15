@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { postsService } from "@/lib/posts"
 import { format } from "date-fns"
 import { dateUtils } from "@/lib/utils"
+import VisitorStats from "@/components/visitor-stats"
 
 interface DashboardStats {
   totalPosts: number
@@ -193,6 +194,9 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* 방문자 통계 섹션 - 컴팩트 모드 */}
+        <VisitorStats compact />
 
         <div className="grid gap-8 lg:grid-cols-2">
           {/* 최근 글 */}
