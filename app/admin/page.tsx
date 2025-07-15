@@ -196,7 +196,9 @@ export default function AdminPage() {
         </div>
 
         {/* 방문자 통계 섹션 - 컴팩트 모드 */}
-        <VisitorStats compact />
+        <div className="mb-8">
+          <VisitorStats compact />
+        </div>
 
         <div className="grid gap-8 lg:grid-cols-2">
           {/* 최근 글 */}
