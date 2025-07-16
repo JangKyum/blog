@@ -8,8 +8,42 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { Users, Eye, TrendingUp, TrendingDown, Calendar, ExternalLink, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react'
 
+// 타입 정의
+interface PageStats {
+  pathname: string
+  totalVisits: number
+  uniqueVisitors: number
+}
+
+interface OverallStats {
+  totalVisits?: number
+  uniqueVisitors?: number
+  todayVisits?: number
+  todayUniqueVisitors?: number
+}
+
+interface Trends {
+  growthRate?: number
+}
+
+interface StatsData {
+  date: string
+  totalVisits: number
+  uniqueVisitors: number
+}
+
+interface StatsResponse {
+  data: StatsData[]
+  totalVisits: number
+  uniqueVisitors: number
+}
+
+interface PopularPagesListProps {
+  pages: PageStats[]
+}
+
 // 인기 페이지 목록 컴포넌트
-function PopularPagesList({ pages }) {
+function PopularPagesList({ pages }: PopularPagesListProps) {
   if (!pages || pages.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -44,14 +78,18 @@ function PopularPagesList({ pages }) {
   )
 }
 
-export default function VisitorStats({ compact = false }) {
-  const [stats, setStats] = useState({ data: [], totalVisits: 0, uniqueVisitors: 0 })
-  const [overallStats, setOverallStats] = useState({})
-  const [popularPages7days, setPopularPages7days] = useState([])
-  const [popularPages30days, setPopularPages30days] = useState([])
-  const [trends, setTrends] = useState({})
+interface VisitorStatsProps {
+  compact?: boolean
+}
+
+export default function VisitorStats({ compact = false }: VisitorStatsProps) {
+  const [stats, setStats] = useState<StatsResponse>({ data: [], totalVisits: 0, uniqueVisitors: 0 })
+  const [overallStats, setOverallStats] = useState<OverallStats>({})
+  const [popularPages7days, setPopularPages7days] = useState<PageStats[]>([])
+  const [popularPages30days, setPopularPages30days] = useState<PageStats[]>([])
+  const [trends, setTrends] = useState<Trends>({})
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('daily')
   const [isExpanded, setIsExpanded] = useState(!compact)
 
@@ -72,13 +110,13 @@ export default function VisitorStats({ compact = false }) {
       ])
     } catch (err) {
       console.error('데이터 로드 실패:', err)
-      setError(err.message)
+      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.')
     } finally {
       setLoading(false)
     }
   }
 
-  const loadStats = async (period) => {
+  const loadStats = async (period: string) => {
     try {
       const response = await fetch(`/api/analytics/stats?period=${period}&limit=30`)
       if (response.ok) {
@@ -142,7 +180,7 @@ export default function VisitorStats({ compact = false }) {
     }
   }
 
-  const formatDate = (dateStr) => {
+  const formatDate = (dateStr: string) => {
     if (!dateStr) return ''
     const date = new Date(dateStr)
     if (isNaN(date.getTime())) return ''
