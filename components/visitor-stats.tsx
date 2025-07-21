@@ -13,6 +13,7 @@ interface PageStats {
   pathname: string
   totalVisits: number
   uniqueVisitors: number
+  title?: string // 포스트 제목 (URL 대신 표시)
 }
 
 interface OverallStats {
@@ -61,7 +62,9 @@ function PopularPagesList({ pages }: PopularPagesListProps) {
               {index + 1}
             </Badge>
             <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">{page.pathname}</p>
+              <p className="font-medium truncate">
+                {page.title || page.pathname}
+              </p>
               <p className="text-sm text-muted-foreground">
                 {(page.totalVisits || 0).toLocaleString()}회 방문 · {(page.uniqueVisitors || 0).toLocaleString()}명 방문자
               </p>
@@ -153,12 +156,12 @@ export default function VisitorStats({ compact = false }: VisitorStatsProps) {
       
       if (response7days.ok) {
         const data7days = await response7days.json()
-        setPopularPages7days(data7days.data || [])
+        setPopularPages7days(data7days.pages || [])
       }
       
       if (response30days.ok) {
         const data30days = await response30days.json()
-        setPopularPages30days(data30days.data || [])
+        setPopularPages30days(data30days.pages || [])
       }
     } catch (error) {
       console.error('인기 페이지 로드 실패:', error)
@@ -180,12 +183,22 @@ export default function VisitorStats({ compact = false }: VisitorStatsProps) {
     }
   }
 
+  // 날짜 포맷 함수 - 탭에 따라 다른 형식 사용
   const formatDate = (dateStr: string) => {
     if (!dateStr) return ''
     const date = new Date(dateStr)
     if (isNaN(date.getTime())) return ''
+    
     const month = date.getMonth() + 1
     const day = date.getDate()
+    const year = date.getFullYear()
+    
+    // 탭에 따라 다른 형식 사용
+    if (activeTab === 'monthly') {
+      return `${year}년 ${month}월`
+    }
+    
+    // 일별, 주별: 월/일 형식
     return `${month}/${day}`
   }
 
@@ -429,11 +442,25 @@ export default function VisitorStats({ compact = false }: VisitorStatsProps) {
               </TabsList>
               
               <TabsContent value="7days" className="mt-4">
-                <PopularPagesList pages={popularPages7days} />
+                {popularPages7days.length > 0 ? (
+                  <PopularPagesList pages={popularPages7days} />
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>7일 데이터를 불러오는 중...</p>
+                    <p className="text-sm mt-2">데이터가 없거나 로딩 중입니다.</p>
+                  </div>
+                )}
               </TabsContent>
               
               <TabsContent value="30days" className="mt-4">
-                <PopularPagesList pages={popularPages30days} />
+                {popularPages30days.length > 0 ? (
+                  <PopularPagesList pages={popularPages30days} />
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>30일 데이터를 불러오는 중...</p>
+                    <p className="text-sm mt-2">데이터가 없거나 로딩 중입니다.</p>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>

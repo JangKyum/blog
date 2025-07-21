@@ -195,9 +195,9 @@ export default function AdminPage() {
           </Card>
         </div>
 
-        {/* 방문자 통계 섹션 - 컴팩트 모드 */}
+        {/* 방문자 통계 섹션 */}
         <div className="mb-8">
-          <VisitorStats compact />
+          <VisitorStats compact={false} />
         </div>
 
         <div className="grid gap-8 lg:grid-cols-2">
