@@ -6,6 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
@@ -27,9 +30,12 @@ import {
   Heading3,
   Minus,
   Table,
+  Upload,
+  X,
   LucideIcon
 } from 'lucide-react'
 import Image from "next/image"
+import { supabase } from '@/lib/supabase'
 
 interface MarkdownPreviewProps {
   value: string
@@ -63,6 +69,11 @@ export default function MarkdownPreview({
   label = "내용"
 }: MarkdownPreviewProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false)
+  const [imageUploadLoading, setImageUploadLoading] = useState(false)
+  const [imageUploadError, setImageUploadError] = useState("")
+  const [imageAlt, setImageAlt] = useState("")
+  const [imageFile, setImageFile] = useState<File | null>(null)
 
   // 텍스트 삽입 헬퍼 함수
   const insertText = useCallback((prefix: string, suffix: string = '', placeholder: string = '') => {
@@ -132,6 +143,75 @@ export default function MarkdownPreview({
     insertText(tableMarkdown, '', '')
   }, [insertText])
 
+  // 이미지 업로드 처리
+  const handleImageUpload = async () => {
+    if (!imageFile) {
+      setImageUploadError("이미지를 선택해주세요.")
+      return
+    }
+
+    setImageUploadLoading(true)
+    setImageUploadError("")
+
+    try {
+      // 파일 확장자 검사
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+      if (!allowedTypes.includes(imageFile.type)) {
+        throw new Error("지원하지 않는 이미지 형식입니다. JPEG, PNG, GIF, WebP 형식을 사용해주세요.")
+      }
+
+      // 파일 크기 검사 (5MB 제한)
+      if (imageFile.size > 5 * 1024 * 1024) {
+        throw new Error("이미지 크기는 5MB 이하여야 합니다.")
+      }
+
+      // 고유한 파일명 생성
+      const timestamp = Date.now()
+      const fileExtension = imageFile.name.split('.').pop()
+      const fileName = `blog-images/${timestamp}.${fileExtension}`
+
+      // Supabase Storage에 업로드
+      const { data, error } = await supabase.storage
+        .from('blog-content')
+        .upload(fileName, imageFile, {
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (error) {
+        throw new Error(`이미지 업로드 실패: ${error.message}`)
+      }
+
+      // 공개 URL 생성
+      const { data: urlData } = supabase.storage
+        .from('blog-content')
+        .getPublicUrl(fileName)
+
+      // 마크다운 문법으로 이미지 삽입
+      const imageMarkdown = `![${imageAlt || '이미지'}](${urlData.publicUrl})`
+      insertText(imageMarkdown, '', '')
+
+      // 다이얼로그 닫기 및 상태 초기화
+      setIsImageDialogOpen(false)
+      setImageFile(null)
+      setImageAlt("")
+      
+    } catch (error) {
+      setImageUploadError(error instanceof Error ? error.message : "이미지 업로드 중 오류가 발생했습니다.")
+    } finally {
+      setImageUploadLoading(false)
+    }
+  }
+
+  // 파일 선택 핸들러
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      setImageFile(file)
+      setImageAlt(file.name.split('.')[0]) // 파일명을 기본 alt 텍스트로 설정
+    }
+  }
+
   // 툴바 버튼들
   const toolbarButtons: ToolbarItem[] = [
     {
@@ -168,8 +248,8 @@ export default function MarkdownPreview({
     },
     {
       icon: ImageIcon,
-      title: '이미지',
-      action: () => insertText('![', '](image-url)', '이미지 설명'),
+      title: '이미지 삽입',
+      action: () => setIsImageDialogOpen(true),
     },
     { type: 'separator' },
     {
@@ -397,7 +477,7 @@ export default function MarkdownPreview({
                               className="rounded-lg shadow-md"
                               sizes="(max-width: 768px) 100vw, 800px"
                               placeholder="blur"
-                              blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
+                              blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxAAPwCdABmX/9k="
                             />
                           </div>
                         )
@@ -416,6 +496,104 @@ export default function MarkdownPreview({
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* 이미지 업로드 다이얼로그 */}
+      <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>이미지 삽입</DialogTitle>
+            <DialogDescription>
+              이미지를 업로드하여 글에 삽입할 수 있습니다.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {imageUploadError && (
+              <Alert variant="destructive">
+                <AlertDescription>{imageUploadError}</AlertDescription>
+              </Alert>
+            )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="image-file">이미지 파일</Label>
+              <Input
+                id="image-file"
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                disabled={imageUploadLoading}
+              />
+              <p className="text-xs text-gray-500">
+                지원 형식: JPEG, PNG, GIF, WebP (최대 5MB)
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="image-alt">이미지 설명 (Alt 텍스트)</Label>
+              <Input
+                id="image-alt"
+                value={imageAlt}
+                onChange={(e) => setImageAlt(e.target.value)}
+                placeholder="이미지에 대한 설명을 입력하세요"
+                disabled={imageUploadLoading}
+              />
+            </div>
+            
+            {imageFile && (
+              <div className="p-3 border rounded-lg bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm font-medium">{imageFile.name}</span>
+                    <span className="text-xs text-gray-500">
+                      ({(imageFile.size / 1024 / 1024).toFixed(2)}MB)
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setImageFile(null)}
+                    disabled={imageUploadLoading}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsImageDialogOpen(false)
+                  setImageFile(null)
+                  setImageAlt("")
+                  setImageUploadError("")
+                }}
+                disabled={imageUploadLoading}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handleImageUpload}
+                disabled={!imageFile || imageUploadLoading}
+              >
+                {imageUploadLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    업로드 중...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    이미지 삽입
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 

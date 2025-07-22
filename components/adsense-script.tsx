@@ -10,9 +10,6 @@ export default function AdSenseScript() {
       src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6125842877688455"
       crossOrigin="anonymous"
       strategy="lazyOnload" // 지연 로딩
-      onLoad={() => {
-        console.log('AdSense script loaded')
-      }}
     />
   )
 } 
